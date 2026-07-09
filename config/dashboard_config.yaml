@@ -80,7 +80,7 @@ charts:
   latest_sales_orders:
     # Number of latest rows to show in the Latest Sales Orders table.
     # Use a positive integer (1, 2, 3, ...).
-    last_n_rows: 5
+    last_n_rows: 6
 
   revenue_trend:
     # Available options: area, line
