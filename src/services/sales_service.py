@@ -14,6 +14,7 @@ CONFIG_YAML = BASE_DIR / "config" / "dashboard_config.yaml"
 VALID_TREND_GRAIN = {"daily", "weekly", "monthly"}
 VALID_REVENUE_TREND_STYLES = {"line", "area"}
 VALID_REGION_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
+VALID_ORDER_STATUS_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 
 
 def _normalize_color(value: object, fallback: str) -> str:
@@ -36,6 +37,16 @@ def _normalize_text(value: object, fallback: str) -> str:
         return fallback
 
     return normalized
+
+
+def _normalize_color_list(value: object, fallback: list[str]) -> list[str]:
+    if not isinstance(value, list):
+        return fallback
+
+    normalized_colors = [
+        item.strip() for item in value if isinstance(item, str) and item.strip()
+    ]
+    return normalized_colors or fallback
 
 
 def _to_float(value: str) -> float:
@@ -69,6 +80,11 @@ def load_dashboard_config() -> dict:
             },
             "revenue_by_region": {
                 "type": "donut",
+                "colors": ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d"],
+            },
+            "order_status": {
+                "type": "vertical_bar",
+                "colors": ["#2f6f91", "#ed8d21", "#1a7f5a", "#b93c5d"],
             },
         }
     }
@@ -104,6 +120,25 @@ def load_dashboard_config() -> dict:
     if region_chart_type not in VALID_REGION_CHART_TYPES:
         region_chart_type = default_config["charts"]["revenue_by_region"]["type"]
 
+    region_colors = _normalize_color_list(
+        raw_config.get("charts", {}).get("revenue_by_region", {}).get("colors"),
+        default_config["charts"]["revenue_by_region"]["colors"],
+    )
+
+    order_status_chart_type = (
+        raw_config.get("charts", {})
+        .get("order_status", {})
+        .get("type", default_config["charts"]["order_status"]["type"])
+    )
+    order_status_chart_type = str(order_status_chart_type).strip().lower()
+    if order_status_chart_type not in VALID_ORDER_STATUS_CHART_TYPES:
+        order_status_chart_type = default_config["charts"]["order_status"]["type"]
+
+    order_status_colors = _normalize_color_list(
+        raw_config.get("charts", {}).get("order_status", {}).get("colors"),
+        default_config["charts"]["order_status"]["colors"],
+    )
+
     dashboard_title = _normalize_text(
         raw_config.get("branding", {}).get("dashboard_title"),
         default_config["branding"]["dashboard_title"],
@@ -135,6 +170,11 @@ def load_dashboard_config() -> dict:
             },
             "revenue_by_region": {
                 "type": region_chart_type,
+                "colors": region_colors,
+            },
+            "order_status": {
+                "type": order_status_chart_type,
+                "colors": order_status_colors,
             },
         }
     }
@@ -219,6 +259,9 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "revenue_trend_line_color": dashboard_config["charts"]["revenue_trend"]["line_color"],
             "revenue_trend_area_color": dashboard_config["charts"]["revenue_trend"]["area_color"],
             "revenue_by_region_type": dashboard_config["charts"]["revenue_by_region"]["type"],
+            "revenue_by_region_colors": dashboard_config["charts"]["revenue_by_region"]["colors"],
+            "order_status_type": dashboard_config["charts"]["order_status"]["type"],
+            "order_status_colors": dashboard_config["charts"]["order_status"]["colors"],
         },
         "branding": {
             "dashboard_title": dashboard_config["branding"]["dashboard_title"],

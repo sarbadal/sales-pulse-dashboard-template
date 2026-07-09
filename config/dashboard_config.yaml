@@ -4,7 +4,7 @@ branding:
 
   # CSS color for the dashboard heading text.
   # Example: "#1f2435" or "rgb(31, 36, 53)" or color name like "navy"
-  dashboard_title_color: "navy"
+  dashboard_title_color: "#1f2435"
 
 charts:
   revenue_by_region:
@@ -13,13 +13,45 @@ charts:
     # - vertical_bar: bar chart with vertical columns
     # - horizontal_bar: bar chart with horizontal bars
     # - pie: pie chart
+    type: donut
+
+    # Region color palette used by Revenue by Region chart.
+    # For donut/pie: each region uses the next color in this list.
+    # For vertical/horizontal bar: each region bar uses the next color in this list.
+    # You can add more colors if you have more regions.
+    colors:
+      - "#1a7f5a"
+      - "#2f6f91"
+      - "#ed8d21"
+      - "#b93c5d"
+    # colors:
+    #   - "red"
+    #   - "blue"
+    #   - "green"
+    #   - "orange"
+
+  order_status:
+    # Available options: donut, vertical_bar, horizontal_bar, pie
+    # - donut: doughnut chart
+    # - vertical_bar: bar chart with vertical columns (default)
+    # - horizontal_bar: bar chart with horizontal bars
+    # - pie: pie chart
     type: horizontal_bar
+
+    # Order status color palette.
+    # For donut/pie: each status uses the next color in this list.
+    # For vertical/horizontal bar: each status bar uses the next color in this list.
+    colors:
+      - "#2f6f91"
+      - "#ed8d21"
+      - "#1a7f5a"
+      - "#b93c5d"
 
   revenue_trend:
     # Available options: area, line
     # - area: line with filled background
     # - line: plain line without fill
-    style: line
+    style: area
 
     # CSS color for line/border (hex, rgb, rgba, hsl are all valid)
     # Example: "#1a7f5a" or "rgb(30, 130, 76)" or color name like "red"

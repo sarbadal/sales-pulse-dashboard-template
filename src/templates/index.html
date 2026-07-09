@@ -153,6 +153,7 @@
       const revenueTrendLineColor = dashboardData.chart_config?.revenue_trend_line_color || "#1a7f5a";
       const revenueTrendAreaColor = dashboardData.chart_config?.revenue_trend_area_color || "rgba(26, 127, 90, 0.15)";
       const revenueByRegionType = dashboardData.chart_config?.revenue_by_region_type || "donut";
+      const orderStatusType = dashboardData.chart_config?.order_status_type || "vertical_bar";
       const isRevenueArea = revenueTrendStyle === "area";
 
       function formatCompactNumber(value) {
@@ -214,7 +215,9 @@
         },
       });
 
-      const regionColors = ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d"];
+      const regionColors =
+        dashboardData.chart_config?.revenue_by_region_colors ||
+        ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d"];
       const isRegionBar =
         revenueByRegionType === "vertical_bar" || revenueByRegionType === "horizontal_bar";
       const regionChartType =
@@ -229,7 +232,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: true,
+            display: !isRegionBar,
             position: "bottom",
           },
         },
@@ -275,7 +278,11 @@
             {
               label: isRegionBar ? "Revenue" : undefined,
               data: dashboardData.region_breakdown.values,
-              backgroundColor: isRegionBar ? "#2f6f91" : regionColors,
+              backgroundColor: isRegionBar
+                ? dashboardData.region_breakdown.labels.map(
+                    (_, idx) => regionColors[idx % regionColors.length]
+                  )
+                : regionColors,
               borderWidth: isRegionBar ? 0 : 2,
               borderColor: isRegionBar ? "transparent" : "#f6f2e8",
               borderRadius: isRegionBar ? 8 : 0,
@@ -285,33 +292,81 @@
         options: regionChartOptions,
       });
 
+      const orderStatusColors =
+        dashboardData.chart_config?.order_status_colors ||
+        ["#2f6f91", "#ed8d21", "#1a7f5a", "#b93c5d"];
+      const isOrderStatusBar =
+        orderStatusType === "vertical_bar" || orderStatusType === "horizontal_bar";
+      const orderStatusChartType =
+        orderStatusType === "pie"
+          ? "pie"
+          : orderStatusType === "donut"
+            ? "doughnut"
+            : "bar";
+
+      const orderStatusOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: !isOrderStatusBar,
+            position: "bottom",
+          },
+        },
+      };
+
+      if (isOrderStatusBar) {
+        orderStatusOptions.indexAxis = orderStatusType === "horizontal_bar" ? "y" : "x";
+        orderStatusOptions.scales = {
+          x: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                orderStatusType === "horizontal_bar"
+                  ? formatCompactNumber(value)
+                  : dashboardData.order_status.labels[value] || value,
+            },
+            grid: {
+              display: orderStatusType !== "horizontal_bar",
+              color: gridColor,
+            },
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                orderStatusType === "horizontal_bar"
+                  ? dashboardData.order_status.labels[value] || value
+                  : formatCompactNumber(value),
+            },
+            grid: {
+              display: orderStatusType === "horizontal_bar",
+              color: gridColor,
+            },
+          },
+        };
+      }
+
       new Chart(document.getElementById("statusChart"), {
-        type: "bar",
+        type: orderStatusChartType,
         data: {
           labels: dashboardData.order_status.labels,
           datasets: [
             {
+              label: isOrderStatusBar ? "Orders" : undefined,
               data: dashboardData.order_status.values,
-              backgroundColor: ["#2f6f91", "#ed8d21", "#1a7f5a", "#b93c5d"],
-              borderRadius: 8,
+              backgroundColor: isOrderStatusBar
+                ? dashboardData.order_status.labels.map(
+                    (_, idx) => orderStatusColors[idx % orderStatusColors.length]
+                  )
+                : orderStatusColors,
+              borderRadius: isOrderStatusBar ? 8 : 0,
+              borderWidth: isOrderStatusBar ? 0 : 2,
+              borderColor: isOrderStatusBar ? "transparent" : "#f6f2e8",
             },
           ],
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: tickColor }, grid: { display: false } },
-            y: {
-              ticks: {
-                color: tickColor,
-                callback: (value) => formatCompactNumber(value),
-              },
-              grid: { color: gridColor },
-            },
-          },
-          plugins: { legend: { display: false } },
-        },
+        options: orderStatusOptions,
       });
 
       new Chart(document.getElementById("productsChart"), {
