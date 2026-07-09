@@ -24,11 +24,28 @@ charts:
       - "#2f6f91"
       - "#ed8d21"
       - "#b93c5d"
-    # colors:
+
     #   - "red"
     #   - "blue"
     #   - "green"
     #   - "orange"
+
+  revenue_by_segment:
+    # Available options: donut, vertical_bar, horizontal_bar, pie
+    # - donut: doughnut chart
+    # - vertical_bar: bar chart with vertical columns
+    # - horizontal_bar: bar chart with horizontal bars
+    # - pie: pie chart (default)
+    type: horizontal_bar
+
+    # Segment color palette.
+    # For donut/pie: each segment uses the next color in this list.
+    # For vertical/horizontal bar: each segment bar uses the next color in this list.
+    colors:
+      - "#b93c5d"
+      - "#ed8d21"
+      - "#1a7f5a"
+      - "#2f6f91"
 
   order_status:
     # Available options: donut, vertical_bar, horizontal_bar, pie
@@ -47,11 +64,29 @@ charts:
       - "#1a7f5a"
       - "#b93c5d"
 
+  top_products_by_units:
+    # Show top N products by units sold in the Top Products chart.
+    # Use a positive integer (1, 2, 3, ...).
+    top_n: 5
+
+    # Bar color for the Top Products by Units chart.
+    # Example: "#2f6f91" or "rgb(47, 111, 145)" or color name like "teal"
+    color: "teal"
+    
+    # Include an "Others" bar where:
+    # Others = total units of all products - units of top_n products
+    include_others: true
+
+  latest_sales_orders:
+    # Number of latest rows to show in the Latest Sales Orders table.
+    # Use a positive integer (1, 2, 3, ...).
+    last_n_rows: 5
+
   revenue_trend:
     # Available options: area, line
     # - area: line with filled background
     # - line: plain line without fill
-    style: area
+    style: line
 
     # CSS color for line/border (hex, rgb, rgba, hsl are all valid)
     # Example: "#1a7f5a" or "rgb(30, 130, 76)" or color name like "red"

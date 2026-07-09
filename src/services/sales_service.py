@@ -15,6 +15,7 @@ VALID_TREND_GRAIN = {"daily", "weekly", "monthly"}
 VALID_REVENUE_TREND_STYLES = {"line", "area"}
 VALID_REGION_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 VALID_ORDER_STATUS_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
+VALID_SEGMENT_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 
 
 def _normalize_color(value: object, fallback: str) -> str:
@@ -47,6 +48,29 @@ def _normalize_color_list(value: object, fallback: list[str]) -> list[str]:
         item.strip() for item in value if isinstance(item, str) and item.strip()
     ]
     return normalized_colors or fallback
+
+
+def _normalize_bool(value: object, fallback: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "y", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "n", "off"}:
+            return False
+
+    return fallback
+
+
+def _normalize_positive_int(value: object, fallback: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+    return parsed if parsed > 0 else fallback
 
 
 def _to_float(value: str) -> float:
@@ -85,6 +109,18 @@ def load_dashboard_config() -> dict:
             "order_status": {
                 "type": "vertical_bar",
                 "colors": ["#2f6f91", "#ed8d21", "#1a7f5a", "#b93c5d"],
+            },
+            "revenue_by_segment": {
+                "type": "pie",
+                "colors": ["#b93c5d", "#ed8d21", "#1a7f5a", "#2f6f91"],
+            },
+            "top_products_by_units": {
+                "top_n": 5,
+                "color": "#2f6f91",
+                "include_others": False,
+            },
+            "latest_sales_orders": {
+                "last_n_rows": 8,
             },
         }
     }
@@ -139,6 +175,38 @@ def load_dashboard_config() -> dict:
         default_config["charts"]["order_status"]["colors"],
     )
 
+    segment_chart_type = (
+        raw_config.get("charts", {})
+        .get("revenue_by_segment", {})
+        .get("type", default_config["charts"]["revenue_by_segment"]["type"])
+    )
+    segment_chart_type = str(segment_chart_type).strip().lower()
+    if segment_chart_type not in VALID_SEGMENT_CHART_TYPES:
+        segment_chart_type = default_config["charts"]["revenue_by_segment"]["type"]
+
+    segment_colors = _normalize_color_list(
+        raw_config.get("charts", {}).get("revenue_by_segment", {}).get("colors"),
+        default_config["charts"]["revenue_by_segment"]["colors"],
+    )
+
+    top_products_top_n = _normalize_positive_int(
+        raw_config.get("charts", {}).get("top_products_by_units", {}).get("top_n"),
+        default_config["charts"]["top_products_by_units"]["top_n"],
+    )
+    top_products_color = _normalize_color(
+        raw_config.get("charts", {}).get("top_products_by_units", {}).get("color"),
+        default_config["charts"]["top_products_by_units"]["color"],
+    )
+    top_products_include_others = _normalize_bool(
+        raw_config.get("charts", {}).get("top_products_by_units", {}).get("include_others"),
+        default_config["charts"]["top_products_by_units"]["include_others"],
+    )
+
+    latest_sales_last_n_rows = _normalize_positive_int(
+        raw_config.get("charts", {}).get("latest_sales_orders", {}).get("last_n_rows"),
+        default_config["charts"]["latest_sales_orders"]["last_n_rows"],
+    )
+
     dashboard_title = _normalize_text(
         raw_config.get("branding", {}).get("dashboard_title"),
         default_config["branding"]["dashboard_title"],
@@ -175,6 +243,18 @@ def load_dashboard_config() -> dict:
             "order_status": {
                 "type": order_status_chart_type,
                 "colors": order_status_colors,
+            },
+            "revenue_by_segment": {
+                "type": segment_chart_type,
+                "colors": segment_colors,
+            },
+            "top_products_by_units": {
+                "top_n": top_products_top_n,
+                "color": top_products_color,
+                "include_others": top_products_include_others,
+            },
+            "latest_sales_orders": {
+                "last_n_rows": latest_sales_last_n_rows,
             },
         }
     }
@@ -244,7 +324,15 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
         status = row.get("order_status", "Unknown")
         status_counts[status] += 1
 
-    top_products = sorted(units_by_product.items(), key=lambda x: x[1], reverse=True)[:5]
+    top_products_top_n = dashboard_config["charts"]["top_products_by_units"]["top_n"]
+    include_others = dashboard_config["charts"]["top_products_by_units"]["include_others"]
+    latest_sales_last_n_rows = dashboard_config["charts"]["latest_sales_orders"]["last_n_rows"]
+    ranked_products = sorted(units_by_product.items(), key=lambda x: x[1], reverse=True)
+    top_products = ranked_products[:top_products_top_n]
+    if include_others and len(ranked_products) > top_products_top_n:
+        others_units = sum(value for _, value in ranked_products[top_products_top_n:])
+        if others_units > 0:
+            top_products.append(("Others", others_units))
 
     return {
         "kpis": {
@@ -262,6 +350,12 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "revenue_by_region_colors": dashboard_config["charts"]["revenue_by_region"]["colors"],
             "order_status_type": dashboard_config["charts"]["order_status"]["type"],
             "order_status_colors": dashboard_config["charts"]["order_status"]["colors"],
+            "revenue_by_segment_type": dashboard_config["charts"]["revenue_by_segment"]["type"],
+            "revenue_by_segment_colors": dashboard_config["charts"]["revenue_by_segment"]["colors"],
+            "top_products_by_units_top_n": top_products_top_n,
+            "top_products_by_units_color": dashboard_config["charts"]["top_products_by_units"]["color"],
+            "top_products_by_units_include_others": include_others,
+            "latest_sales_orders_last_n_rows": latest_sales_last_n_rows,
         },
         "branding": {
             "dashboard_title": dashboard_config["branding"]["dashboard_title"],
@@ -284,5 +378,5 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "labels": list(status_counts.keys()),
             "values": list(status_counts.values()),
         },
-        "latest_sales": sales_rows[-8:],
+        "latest_sales": sales_rows[-latest_sales_last_n_rows:],
     }

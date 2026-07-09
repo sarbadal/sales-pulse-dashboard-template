@@ -90,7 +90,10 @@
         <article class="panel">
           <div class="panel-head">
             <h3>Top Products by Units</h3>
-            <span>Top 5</span>
+            <span>
+              Top {{ data.chart_config.top_products_by_units_top_n }}
+              {% if data.chart_config.top_products_by_units_include_others %}+ Others{% endif %}
+            </span>
           </div>
           <canvas id="productsChart"></canvas>
         </article>
@@ -107,7 +110,7 @@
       <section class="panel table-panel">
         <div class="panel-head">
           <h3>Latest Sales Orders</h3>
-          <span>Last 8 Rows</span>
+          <span>Last {{ data.chart_config.latest_sales_orders_last_n_rows }} Rows</span>
         </div>
         <div class="table-wrap">
           <table>
@@ -154,6 +157,8 @@
       const revenueTrendAreaColor = dashboardData.chart_config?.revenue_trend_area_color || "rgba(26, 127, 90, 0.15)";
       const revenueByRegionType = dashboardData.chart_config?.revenue_by_region_type || "donut";
       const orderStatusType = dashboardData.chart_config?.order_status_type || "vertical_bar";
+      const revenueBySegmentType = dashboardData.chart_config?.revenue_by_segment_type || "pie";
+      const topProductsColor = dashboardData.chart_config?.top_products_by_units_color || "#2f6f91";
       const isRevenueArea = revenueTrendStyle === "area";
 
       function formatCompactNumber(value) {
@@ -190,8 +195,9 @@
               ticks: {
                 display: true,
                 color: tickColor,
-                maxTicksLimit: 10,
-                maxRotation: 0,
+                maxTicksLimit: 18,
+                maxRotation: 40,
+                minRotation: 0,
                 autoSkip: true,
               },
               grid: { display: false },
@@ -377,7 +383,7 @@
             {
               label: "Units Sold",
               data: dashboardData.top_products.values,
-              backgroundColor: "#2f6f91",
+              backgroundColor: topProductsColor,
               borderRadius: 8,
             },
           ],
@@ -400,24 +406,81 @@
         },
       });
 
+      const segmentColors =
+        dashboardData.chart_config?.revenue_by_segment_colors ||
+        ["#b93c5d", "#ed8d21", "#1a7f5a", "#2f6f91"];
+      const isSegmentBar =
+        revenueBySegmentType === "vertical_bar" || revenueBySegmentType === "horizontal_bar";
+      const segmentChartType =
+        revenueBySegmentType === "pie"
+          ? "pie"
+          : revenueBySegmentType === "donut"
+            ? "doughnut"
+            : "bar";
+
+      const segmentOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: !isSegmentBar,
+            position: "bottom",
+          },
+        },
+      };
+
+      if (isSegmentBar) {
+        segmentOptions.indexAxis = revenueBySegmentType === "horizontal_bar" ? "y" : "x";
+        segmentOptions.scales = {
+          x: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                revenueBySegmentType === "horizontal_bar"
+                  ? formatCompactNumber(value)
+                  : dashboardData.segment_breakdown.labels[value] || value,
+            },
+            grid: {
+              display: revenueBySegmentType !== "horizontal_bar",
+              color: gridColor,
+            },
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                revenueBySegmentType === "horizontal_bar"
+                  ? dashboardData.segment_breakdown.labels[value] || value
+                  : formatCompactNumber(value),
+            },
+            grid: {
+              display: revenueBySegmentType === "horizontal_bar",
+              color: gridColor,
+            },
+          },
+        };
+      }
+
       new Chart(document.getElementById("segmentChart"), {
-        type: "pie",
+        type: segmentChartType,
         data: {
           labels: dashboardData.segment_breakdown.labels,
           datasets: [
             {
+              label: isSegmentBar ? "Revenue" : undefined,
               data: dashboardData.segment_breakdown.values,
-              backgroundColor: ["#b93c5d", "#ed8d21", "#1a7f5a", "#2f6f91"],
-              borderWidth: 2,
-              borderColor: "#f6f2e8",
+              backgroundColor: isSegmentBar
+                ? dashboardData.segment_breakdown.labels.map(
+                    (_, idx) => segmentColors[idx % segmentColors.length]
+                  )
+                : segmentColors,
+              borderRadius: isSegmentBar ? 8 : 0,
+              borderWidth: isSegmentBar ? 0 : 2,
+              borderColor: isSegmentBar ? "transparent" : "#f6f2e8",
             },
           ],
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } },
-        },
+        options: segmentOptions,
       });
     </script>
   </body>
