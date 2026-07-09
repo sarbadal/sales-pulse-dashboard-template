@@ -1,0 +1,30 @@
+branding:
+  # Main dashboard heading text (H1) and browser tab title.
+  dashboard_title: "Sales Pulse Dashboard"
+
+  # CSS color for the dashboard heading text.
+  # Example: "#1f2435" or "rgb(31, 36, 53)" or color name like "navy"
+  dashboard_title_color: "navy"
+
+charts:
+  revenue_by_region:
+    # Available options: donut, vertical_bar, horizontal_bar, pie
+    # - donut: doughnut chart (default)
+    # - vertical_bar: bar chart with vertical columns
+    # - horizontal_bar: bar chart with horizontal bars
+    # - pie: pie chart
+    type: horizontal_bar
+
+  revenue_trend:
+    # Available options: area, line
+    # - area: line with filled background
+    # - line: plain line without fill
+    style: line
+
+    # CSS color for line/border (hex, rgb, rgba, hsl are all valid)
+    # Example: "#1a7f5a" or "rgb(30, 130, 76)" or color name like "red"
+    line_color: "#1a7f5a"
+
+    # CSS color for area fill when style is "area"
+    # Example: "rgba(26, 127, 90, 0.15)"
+    area_color: "rgba(26, 127, 90, 0.15)"

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ data.branding.dashboard_title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-layer"></div>
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div>
+          <div class="brand-logo" aria-label="Brand logo">
+            <img
+              class="brand-logo-image"
+              src="{{ url_for('static', filename='logo.svg') }}"
+              alt="Sales Pulse logo"
+            />
+            <div class="brand-logo-text">
+              <strong>Sales Pulse</strong>
+              <span>Demo Dashboard</span>
+            </div>
+          </div>
+          <p class="eyebrow">Daily Commerce Snapshot</p>
+          <h1 id="dashboardTitle">{{ data.branding.dashboard_title }}</h1>
+        </div>
+        <p class="subtitle">Simple Flask dashboard powered by CSV data.</p>
+      </header>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <p>Total Revenue</p>
+          <h2>${{ '%.2f'|format(data.kpis.total_revenue) }}</h2>
+        </article>
+        <article class="kpi-card">
+          <p>Total Profit</p>
+          <h2>${{ '%.2f'|format(data.kpis.total_profit) }}</h2>
+        </article>
+        <article class="kpi-card">
+          <p>Total Orders</p>
+          <h2>{{ data.kpis.total_orders }}</h2>
+        </article>
+        <article class="kpi-card">
+          <p>Average Order Value</p>
+          <h2>${{ '%.2f'|format(data.kpis.avg_order_value) }}</h2>
+        </article>
+      </section>
+
+      <section class="chart-grid">
+        <article class="panel panel-wide">
+          <div class="panel-head">
+            <h3>Revenue Trend</h3>
+            <form method="get" class="trend-form">
+              <label for="trend" class="sr-only">Revenue Trend Granularity</label>
+              <select id="trend" name="trend" class="trend-select" onchange="this.form.submit()">
+                <option value="daily" {% if data.selected_trend == 'daily' %}selected{% endif %}>Daily</option>
+                <option value="weekly" {% if data.selected_trend == 'weekly' %}selected{% endif %}>Weekly</option>
+                <option value="monthly" {% if data.selected_trend == 'monthly' %}selected{% endif %}>Monthly</option>
+              </select>
+            </form>
+          </div>
+          <p class="chart-style-note">Style: {{ data.chart_config.revenue_trend_style|capitalize }}</p>
+          <canvas id="revenueTrendChart"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Revenue by Region</h3>
+            <span>Distribution</span>
+          </div>
+          <canvas id="regionChart"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Order Status</h3>
+            <span>Current</span>
+          </div>
+          <canvas id="statusChart"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Top Products by Units</h3>
+            <span>Top 5</span>
+          </div>
+          <canvas id="productsChart"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Revenue by Segment</h3>
+            <span>Audience</span>
+          </div>
+          <canvas id="segmentChart"></canvas>
+        </article>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <h3>Latest Sales Orders</h3>
+          <span>Last 8 Rows</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Region</th>
+                <th>Product</th>
+                <th>Segment</th>
+                <th>Revenue</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in data.latest_sales %}
+              <tr>
+                <td>{{ row.order_id }}</td>
+                <td>{{ row.date }}</td>
+                <td>{{ row.region }}</td>
+                <td>{{ row.product }}</td>
+                <td>{{ row.customer_segment }}</td>
+                <td>${{ row.revenue }}</td>
+                <td>${{ row.profit }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const dashboardData = {{ data|tojson }};
+      const dashboardTitle = document.getElementById("dashboardTitle");
+      if (dashboardTitle) {
+        dashboardTitle.style.color = dashboardData.branding?.dashboard_title_color || "#1f2435";
+      }
+
+      const gridColor = "rgba(28, 31, 46, 0.12)";
+      const tickColor = "#1f2435";
+      const revenueTrendStyle = dashboardData.chart_config?.revenue_trend_style || "area";
+      const revenueTrendLineColor = dashboardData.chart_config?.revenue_trend_line_color || "#1a7f5a";
+      const revenueTrendAreaColor = dashboardData.chart_config?.revenue_trend_area_color || "rgba(26, 127, 90, 0.15)";
+      const revenueByRegionType = dashboardData.chart_config?.revenue_by_region_type || "donut";
+      const isRevenueArea = revenueTrendStyle === "area";
+
+      function formatCompactNumber(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return value;
+        return new Intl.NumberFormat("en-US", {
+          notation: "compact",
+          compactDisplay: "short",
+          maximumFractionDigits: 1,
+        }).format(num);
+      }
+
+      new Chart(document.getElementById("revenueTrendChart"), {
+        type: "line",
+        data: {
+          labels: dashboardData.revenue_trend.labels,
+          datasets: [
+            {
+              label: "Revenue",
+              data: dashboardData.revenue_trend.values,
+              borderColor: revenueTrendLineColor,
+              backgroundColor: isRevenueArea ? revenueTrendAreaColor : "rgba(26, 127, 90, 0)",
+              fill: isRevenueArea,
+              pointRadius: 2,
+              tension: 0.25,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                display: true,
+                color: tickColor,
+                maxTicksLimit: 10,
+                maxRotation: 0,
+                autoSkip: true,
+              },
+              grid: { display: false },
+            },
+            y: {
+              ticks: {
+                color: tickColor,
+                callback: (value) => formatCompactNumber(value),
+              },
+              grid: { color: gridColor },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) => `Revenue: ${formatCompactNumber(context.parsed.y)}`,
+              },
+            },
+          },
+        },
+      });
+
+      const regionColors = ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d"];
+      const isRegionBar =
+        revenueByRegionType === "vertical_bar" || revenueByRegionType === "horizontal_bar";
+      const regionChartType =
+        revenueByRegionType === "pie"
+          ? "pie"
+          : revenueByRegionType === "donut"
+            ? "doughnut"
+            : "bar";
+
+      const regionChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+          },
+        },
+      };
+
+      if (isRegionBar) {
+        regionChartOptions.indexAxis = revenueByRegionType === "horizontal_bar" ? "y" : "x";
+        regionChartOptions.scales = {
+          x: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                revenueByRegionType === "horizontal_bar"
+                  ? formatCompactNumber(value)
+                  : dashboardData.region_breakdown.labels[value] || value,
+            },
+            grid: {
+              display: revenueByRegionType !== "horizontal_bar",
+              color: gridColor,
+            },
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              callback: (value) =>
+                revenueByRegionType === "horizontal_bar"
+                  ? dashboardData.region_breakdown.labels[value] || value
+                  : formatCompactNumber(value),
+            },
+            grid: {
+              display: revenueByRegionType === "horizontal_bar",
+              color: gridColor,
+            },
+          },
+        };
+      }
+
+      new Chart(document.getElementById("regionChart"), {
+        type: regionChartType,
+        data: {
+          labels: dashboardData.region_breakdown.labels,
+          datasets: [
+            {
+              label: isRegionBar ? "Revenue" : undefined,
+              data: dashboardData.region_breakdown.values,
+              backgroundColor: isRegionBar ? "#2f6f91" : regionColors,
+              borderWidth: isRegionBar ? 0 : 2,
+              borderColor: isRegionBar ? "transparent" : "#f6f2e8",
+              borderRadius: isRegionBar ? 8 : 0,
+            },
+          ],
+        },
+        options: regionChartOptions,
+      });
+
+      new Chart(document.getElementById("statusChart"), {
+        type: "bar",
+        data: {
+          labels: dashboardData.order_status.labels,
+          datasets: [
+            {
+              data: dashboardData.order_status.values,
+              backgroundColor: ["#2f6f91", "#ed8d21", "#1a7f5a", "#b93c5d"],
+              borderRadius: 8,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: tickColor }, grid: { display: false } },
+            y: {
+              ticks: {
+                color: tickColor,
+                callback: (value) => formatCompactNumber(value),
+              },
+              grid: { color: gridColor },
+            },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+
+      new Chart(document.getElementById("productsChart"), {
+        type: "bar",
+        data: {
+          labels: dashboardData.top_products.labels,
+          datasets: [
+            {
+              label: "Units Sold",
+              data: dashboardData.top_products.values,
+              backgroundColor: "#2f6f91",
+              borderRadius: 8,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                color: tickColor,
+                callback: (value) => formatCompactNumber(value),
+              },
+              grid: { color: gridColor },
+            },
+            y: { ticks: { color: tickColor }, grid: { display: false } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+
+      new Chart(document.getElementById("segmentChart"), {
+        type: "pie",
+        data: {
+          labels: dashboardData.segment_breakdown.labels,
+          datasets: [
+            {
+              data: dashboardData.segment_breakdown.values,
+              backgroundColor: ["#b93c5d", "#ed8d21", "#1a7f5a", "#2f6f91"],
+              borderWidth: 2,
+              borderColor: "#f6f2e8",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+        },
+      });
+    </script>
+  </body>
+</html>
