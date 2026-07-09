@@ -16,8 +16,8 @@
   <body>
     <div class="bg-layer"></div>
     <main class="dashboard-shell">
-      <header class="dashboard-header">
-        <div>
+      <section class="hero-band">
+        <div class="hero-main">
           <div class="brand-logo" aria-label="Brand logo">
             <img
               class="brand-logo-image"
@@ -26,16 +26,30 @@
             />
             <div class="brand-logo-text">
               <strong>Sales Pulse</strong>
-              <span>Demo Dashboard</span>
+              <span>Field Report</span>
             </div>
           </div>
-          <p class="eyebrow">Daily Commerce Snapshot</p>
+          <p class="eyebrow">Operations Snapshot</p>
           <h1 id="dashboardTitle">{{ data.branding.dashboard_title }}</h1>
+          <p class="subtitle">Same data, redesigned for faster scanning and executive storytelling.</p>
         </div>
-        <p class="subtitle">Simple Flask dashboard powered by CSV data.</p>
-      </header>
 
-      <section class="kpi-grid">
+        <aside class="hero-meta">
+          <p class="hero-meta-label">Trend Window</p>
+          <form method="get" class="trend-form">
+            <label for="trend" class="sr-only">Revenue Trend Granularity</label>
+            <select id="trend" name="trend" class="trend-select" onchange="this.form.submit()">
+              <option value="daily" {% if data.selected_trend == 'daily' %}selected{% endif %}>Daily</option>
+              <option value="weekly" {% if data.selected_trend == 'weekly' %}selected{% endif %}>Weekly</option>
+              <option value="monthly" {% if data.selected_trend == 'monthly' %}selected{% endif %}>Monthly</option>
+            </select>
+          </form>
+          <p class="chart-style-note">Trend style: {{ data.chart_config.revenue_trend_style|capitalize }}</p>
+          <p class="hero-meta-foot">Source: CSV files in data folder</p>
+        </aside>
+      </section>
+
+      <section class="kpi-strip">
         <article class="kpi-card">
           <p>Total Revenue</p>
           <h2>${{ '%.2f'|format(data.kpis.total_revenue) }}</h2>
@@ -54,24 +68,16 @@
         </article>
       </section>
 
-      <section class="chart-grid">
-        <article class="panel panel-wide">
+      <section class="chart-layout">
+        <article class="panel panel-trend">
           <div class="panel-head">
             <h3>Revenue Trend</h3>
-            <form method="get" class="trend-form">
-              <label for="trend" class="sr-only">Revenue Trend Granularity</label>
-              <select id="trend" name="trend" class="trend-select" onchange="this.form.submit()">
-                <option value="daily" {% if data.selected_trend == 'daily' %}selected{% endif %}>Daily</option>
-                <option value="weekly" {% if data.selected_trend == 'weekly' %}selected{% endif %}>Weekly</option>
-                <option value="monthly" {% if data.selected_trend == 'monthly' %}selected{% endif %}>Monthly</option>
-              </select>
-            </form>
+            <span>Time series</span>
           </div>
-          <p class="chart-style-note">Style: {{ data.chart_config.revenue_trend_style|capitalize }}</p>
           <canvas id="revenueTrendChart"></canvas>
         </article>
 
-        <article class="panel">
+        <article class="panel panel-region">
           <div class="panel-head">
             <h3>Revenue by Region</h3>
             <span>Distribution</span>
@@ -79,7 +85,7 @@
           <canvas id="regionChart"></canvas>
         </article>
 
-        <article class="panel">
+        <article class="panel panel-status">
           <div class="panel-head">
             <h3>Order Status</h3>
             <span>Current</span>
@@ -87,7 +93,7 @@
           <canvas id="statusChart"></canvas>
         </article>
 
-        <article class="panel">
+        <article class="panel panel-products">
           <div class="panel-head">
             <h3>Top Products by Units</h3>
             <span>
@@ -98,7 +104,7 @@
           <canvas id="productsChart"></canvas>
         </article>
 
-        <article class="panel">
+        <article class="panel panel-segment">
           <div class="panel-head">
             <h3>Revenue by Segment</h3>
             <span>Audience</span>
