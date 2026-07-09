@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, render_template, request
 
-from services.sales_service import build_dashboard_data
+from src.services.sales_service import build_dashboard_data
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
