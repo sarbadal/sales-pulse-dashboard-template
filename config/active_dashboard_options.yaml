@@ -3,7 +3,7 @@ branding:
   dashboard_title_color: '#1f2435'
 charts:
   revenue_trend:
-    style: line
+    style: area
   revenue_by_region:
     type: donut
   revenue_by_segment:
