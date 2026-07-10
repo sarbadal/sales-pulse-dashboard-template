@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from src.constants import VALID_TREND_GRAIN
+from src.utils.date_helpers import parse_iso_date
 
 
 def _resolve_period(granularity: str) -> str:
@@ -56,6 +57,36 @@ def _build_campaign_daily_distribution(campaign_rows: list[dict[str, str]]) -> p
     return distributed_df.explode("current_day")
 
 
+def _resolve_date_bounds(
+    start_date_raw: str | None,
+    end_date_raw: str | None,
+) -> tuple[pd.Timestamp | None, pd.Timestamp | None]:
+    start = parse_iso_date((start_date_raw or "").strip())
+    end = parse_iso_date((end_date_raw or "").strip())
+    if start and end and start > end:
+        start, end = end, start
+
+    start_bound = pd.Timestamp(start) if start else None
+    end_bound = pd.Timestamp(end) if end else None
+    return start_bound, end_bound
+
+
+def _apply_date_bounds(
+    daily_distribution_df: pd.DataFrame,
+    start_bound: pd.Timestamp | None,
+    end_bound: pd.Timestamp | None,
+) -> pd.DataFrame:
+    if daily_distribution_df.empty or (start_bound is None and end_bound is None):
+        return daily_distribution_df
+
+    bounded_df = daily_distribution_df
+    if start_bound is not None:
+        bounded_df = bounded_df[bounded_df["current_day"] >= start_bound]
+    if end_bound is not None:
+        bounded_df = bounded_df[bounded_df["current_day"] <= end_bound]
+    return bounded_df
+
+
 def aggregate_revenue_trend(sales_rows: list[dict[str, str]], granularity: str) -> dict[str, list]:
     """Aggregate sales revenue into daily, weekly, or monthly trend buckets."""
     period = _resolve_period(granularity)
@@ -87,10 +118,17 @@ def aggregate_revenue_trend(sales_rows: list[dict[str, str]], granularity: str) 
     }
 
 
-def aggregate_campaign_roas_trend(campaign_rows: list[dict[str, str]], granularity: str) -> dict[str, list]:
+def aggregate_campaign_roas_trend(
+    campaign_rows: list[dict[str, str]],
+    granularity: str,
+    start_date_raw: str | None = None,
+    end_date_raw: str | None = None,
+) -> dict[str, list]:
     """Aggregate campaign ROAS over time using distributed daily spend and revenue."""
     period = _resolve_period(granularity)
+    start_bound, end_bound = _resolve_date_bounds(start_date_raw, end_date_raw)
     distributed_df = _build_campaign_daily_distribution(campaign_rows)
+    distributed_df = _apply_date_bounds(distributed_df, start_bound, end_bound)
     if distributed_df.empty:
         return {"labels": [], "values": []}
 
@@ -112,10 +150,17 @@ def aggregate_campaign_roas_trend(campaign_rows: list[dict[str, str]], granulari
     }
 
 
-def aggregate_campaign_spend_trend(campaign_rows: list[dict[str, str]], granularity: str) -> dict[str, list]:
+def aggregate_campaign_spend_trend(
+    campaign_rows: list[dict[str, str]],
+    granularity: str,
+    start_date_raw: str | None = None,
+    end_date_raw: str | None = None,
+) -> dict[str, list]:
     """Aggregate campaign spend over time by spreading spend across campaign dates."""
     period = _resolve_period(granularity)
+    start_bound, end_bound = _resolve_date_bounds(start_date_raw, end_date_raw)
     distributed_df = _build_campaign_daily_distribution(campaign_rows)
+    distributed_df = _apply_date_bounds(distributed_df, start_bound, end_bound)
     if distributed_df.empty:
         return {"labels": [], "values": []}
 

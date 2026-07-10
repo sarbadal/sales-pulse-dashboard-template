@@ -127,6 +127,19 @@ h1 {
   cursor: default;
 }
 
+.dashboard-filters {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(63, 73, 103, 0.12);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(6px);
+  position: relative;
+  z-index: 40;
+  overflow: visible;
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -215,6 +228,72 @@ h1 {
 
 .trend-form {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.region-dropdown {
+  position: relative;
+  z-index: 60;
+}
+
+.region-summary {
+  min-width: 150px;
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.region-summary::after {
+  content: "▾";
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.region-summary::-webkit-details-marker {
+  display: none;
+}
+
+.region-dropdown[open] .region-summary::after {
+  content: "▴";
+}
+
+.region-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 120;
+  min-width: 190px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(63, 73, 103, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 14px 24px rgba(20, 32, 55, 0.16);
+  padding: 0.45rem;
+}
+
+.region-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.28rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  color: var(--ink-900);
+}
+
+.region-option:hover {
+  background: rgba(26, 127, 90, 0.1);
+}
+
+.region-option input {
+  accent-color: var(--mint);
 }
 
 .trend-select {
@@ -231,6 +310,28 @@ h1 {
 .trend-select:focus {
   outline: 2px solid rgba(26, 127, 90, 0.32);
   outline-offset: 2px;
+}
+
+.trend-apply,
+.trend-reset {
+  border: 1px solid rgba(63, 73, 103, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-900);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  text-decoration: none;
+}
+
+.trend-apply {
+  cursor: pointer;
+}
+
+.trend-apply:hover,
+.trend-reset:hover {
+  background: rgba(26, 127, 90, 0.12);
 }
 
 .chart-style-note {
@@ -407,6 +508,10 @@ tbody tr:hover {
   .dashboard-shell {
     width: 94vw;
     margin-top: 1.2rem;
+  }
+
+  .region-menu {
+    min-width: min(78vw, 240px);
   }
 
   .kpi-grid {

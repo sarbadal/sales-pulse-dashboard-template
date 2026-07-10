@@ -14,7 +14,10 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @dashboard_bp.route("/")
 def dashboard() -> str:
     trend = request.args.get("trend", "daily").strip().lower()
-    data = build_dashboard_data(trend)
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+    region = request.args.getlist("region")
+    data = build_dashboard_data(trend, start_date, end_date, region)
     return render_template("index.html", data=data)
 
 

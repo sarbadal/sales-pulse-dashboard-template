@@ -36,6 +36,56 @@
         </div>
       </header>
 
+      <section class="dashboard-filters" aria-label="Dashboard filters">
+        <form method="get" class="trend-form">
+          <label for="trend" class="sr-only">Revenue Trend Granularity</label>
+          <select id="trend" name="trend" class="trend-select">
+            <option value="daily" {% if data.selected_trend == 'daily' %}selected{% endif %}>Daily</option>
+            <option value="weekly" {% if data.selected_trend == 'weekly' %}selected{% endif %}>Weekly</option>
+            <option value="monthly" {% if data.selected_trend == 'monthly' %}selected{% endif %}>Monthly</option>
+          </select>
+          <label for="regionFilter" class="sr-only">Region</label>
+          {% set selected_regions = data.date_filter.region %}
+          <details class="region-dropdown">
+            <summary id="regionFilter" class="trend-select region-summary">
+              {% if 'all' in selected_regions %}
+                All Regions
+              {% elif selected_regions|length == 1 %}
+                {{ selected_regions[0] }}
+              {% else %}
+                {{ selected_regions|length }} Regions
+              {% endif %}
+            </summary>
+            <div class="region-menu">
+              {% for region in data.date_filter.region_options %}
+              <label class="region-option">
+                <input type="checkbox" name="region" value="{{ region }}" {% if region in selected_regions %}checked{% endif %} />
+                <span>{{ region|capitalize if region == 'all' else region }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </details>
+          <label for="startDate" class="sr-only">Start Date</label>
+          <input
+            id="startDate"
+            name="start_date"
+            type="date"
+            class="trend-select"
+            value="{{ data.date_filter.start_date }}"
+          />
+          <label for="endDate" class="sr-only">End Date</label>
+          <input
+            id="endDate"
+            name="end_date"
+            type="date"
+            class="trend-select"
+            value="{{ data.date_filter.end_date }}"
+          />
+          <button type="submit" class="trend-apply">Apply</button>
+          <a href="{{ url_for('dashboard.dashboard', trend=data.selected_trend, region='all') }}" class="trend-reset">Reset</a>
+        </form>
+      </section>
+
       <section class="kpi-grid">
         <article class="kpi-card">
           <p>Total Revenue</p>
@@ -78,14 +128,7 @@
         <article class="panel panel-wide">
           <div class="panel-head">
             <h3>Revenue + Campaign Spend + ROAS Trend</h3>
-            <form method="get" class="trend-form">
-              <label for="trend" class="sr-only">Revenue Trend Granularity</label>
-              <select id="trend" name="trend" class="trend-select" onchange="this.form.submit()">
-                <option value="daily" {% if data.selected_trend == 'daily' %}selected{% endif %}>Daily</option>
-                <option value="weekly" {% if data.selected_trend == 'weekly' %}selected{% endif %}>Weekly</option>
-                <option value="monthly" {% if data.selected_trend == 'monthly' %}selected{% endif %}>Monthly</option>
-              </select>
-            </form>
+            <span>Filtered Trend</span>
           </div>
           <p class="chart-style-note">Style: {{ data.chart_config.revenue_trend_style|capitalize }}</p>
           <canvas id="revenueTrendChart"></canvas>
