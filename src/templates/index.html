@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="{{ static_asset('styles.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   </head>
   <body>
@@ -21,7 +21,7 @@
           <div class="brand-logo" aria-label="Brand logo">
             <img
               class="brand-logo-image"
-              src="{{ url_for('static', filename='logo.png') }}"
+              src="{{ static_asset('logo.png') }}"
               alt="Sales Pulse logo"
             />
             <div class="brand-logo-text">
