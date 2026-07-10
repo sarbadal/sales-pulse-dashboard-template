@@ -1,9 +1,9 @@
 branding:
-  dashboard_title: 'Performance Dashboard: Sales + Campaigns'
+  dashboard_title: 'Performance Dashboard: (Sales & Campaigns)'
   dashboard_title_color: '#1f2435'
 charts:
   revenue_trend:
-    style: line
+    style: area
   revenue_by_region:
     type: donut
   revenue_by_segment:
@@ -16,5 +16,7 @@ charts:
     split_revenue_type: horizontal_bar
   latest_sales_orders:
     show_table: 'true'
+    last_n_rows: '5'
   latest_campaigns:
     show_table: 'true'
+    last_n_rows: '5'

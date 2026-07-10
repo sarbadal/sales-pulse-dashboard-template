@@ -48,9 +48,11 @@ def config_selector() -> str:
                     },
                     "latest_sales_orders": {
                         "show_table": request.form.get("show_latest_sales_table", "").strip(),
+                        "last_n_rows": request.form.get("latest_sales_last_n_rows", "").strip(),
                     },
                     "latest_campaigns": {
                         "show_table": request.form.get("show_latest_campaigns_table", "").strip(),
+                        "last_n_rows": request.form.get("latest_campaigns_last_n_rows", "").strip(),
                     },
                 }
             }
