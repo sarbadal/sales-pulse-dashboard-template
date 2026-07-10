@@ -7,8 +7,17 @@ Simple Flask dashboard that reads sales data from CSV files.
 The dashboard behavior is controlled by:
 
 - `config/dashboard_config.yaml`
+- selected file pointer: `config/active_dashboard_config.yaml`
+- active option overrides: `config/active_dashboard_options.yaml`
 
 Edit this file to change title text, chart styles, colors, and table size.
+
+You can switch active config from the browser at:
+
+- `/config`
+
+The selected file name is stored in `config/active_dashboard_config.yaml` under `selected_config`.
+Dropdown selections from the `/config` page are stored in `config/active_dashboard_options.yaml` and merged on top of the selected base config.
 
 ### What you are expected to change
 

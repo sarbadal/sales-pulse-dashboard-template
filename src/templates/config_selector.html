@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Config Selector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ static_asset('styles.css') }}" />
+  </head>
+  <body>
+    <div class="bg-layer"></div>
+    <main class="dashboard-shell">
+      <section class="panel config-panel">
+        <div class="panel-head">
+          <h3>Dashboard Config</h3>
+          <a href="{{ url_for('dashboard.dashboard') }}" class="nav-link">Back to Dashboard</a>
+        </div>
+
+        <p class="subtitle">Update active dashboard options and save them.</p>
+
+        {% if status == 'options_saved' %}
+        <p class="status-badge status-success">Active options saved.</p>
+        {% elif status == 'options_invalid' %}
+        <p class="status-badge status-error">Failed to save active options.</p>
+        {% endif %}
+
+        <form method="post" class="config-form config-form-options">
+          <input type="hidden" name="action" value="save_active_options" />
+          <h4 class="config-subtitle">Active Options</h4>
+
+          <label for="dashboard_title">Dashboard Title</label>
+          <input
+            id="dashboard_title"
+            name="dashboard_title"
+            type="text"
+            class="trend-select"
+            value="{{ active_config.branding.dashboard_title }}"
+          />
+
+          <label for="dashboard_title_color">Dashboard Title Color</label>
+          <input
+            id="dashboard_title_color"
+            name="dashboard_title_color"
+            type="text"
+            class="trend-select"
+            value="{{ active_config.branding.dashboard_title_color }}"
+          />
+
+          <label for="revenue_trend_style">Revenue Trend Style</label>
+          <select id="revenue_trend_style" name="revenue_trend_style" class="trend-select">
+            <option value="area" {% if active_config.charts.revenue_trend.style == 'area' %}selected{% endif %}>area</option>
+            <option value="line" {% if active_config.charts.revenue_trend.style == 'line' %}selected{% endif %}>line</option>
+          </select>
+
+          <label for="revenue_by_region_type">Revenue by Region Type</label>
+          <select id="revenue_by_region_type" name="revenue_by_region_type" class="trend-select">
+            <option value="donut" {% if active_config.charts.revenue_by_region.type == 'donut' %}selected{% endif %}>donut</option>
+            <option value="pie" {% if active_config.charts.revenue_by_region.type == 'pie' %}selected{% endif %}>pie</option>
+            <option value="vertical_bar" {% if active_config.charts.revenue_by_region.type == 'vertical_bar' %}selected{% endif %}>vertical_bar</option>
+            <option value="horizontal_bar" {% if active_config.charts.revenue_by_region.type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
+          </select>
+
+          <label for="revenue_by_segment_type">Revenue by Segment Type</label>
+          <select id="revenue_by_segment_type" name="revenue_by_segment_type" class="trend-select">
+            <option value="donut" {% if active_config.charts.revenue_by_segment.type == 'donut' %}selected{% endif %}>donut</option>
+            <option value="pie" {% if active_config.charts.revenue_by_segment.type == 'pie' %}selected{% endif %}>pie</option>
+            <option value="vertical_bar" {% if active_config.charts.revenue_by_segment.type == 'vertical_bar' %}selected{% endif %}>vertical_bar</option>
+            <option value="horizontal_bar" {% if active_config.charts.revenue_by_segment.type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
+          </select>
+
+          <label for="order_status_type">Order Status Type</label>
+          <select id="order_status_type" name="order_status_type" class="trend-select">
+            <option value="donut" {% if active_config.charts.order_status.type == 'donut' %}selected{% endif %}>donut</option>
+            <option value="pie" {% if active_config.charts.order_status.type == 'pie' %}selected{% endif %}>pie</option>
+            <option value="vertical_bar" {% if active_config.charts.order_status.type == 'vertical_bar' %}selected{% endif %}>vertical_bar</option>
+            <option value="horizontal_bar" {% if active_config.charts.order_status.type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
+          </select>
+
+          <label for="campaign_channel_mode">Campaign Channel Mode</label>
+          <select id="campaign_channel_mode" name="campaign_channel_mode" class="trend-select">
+            <option value="combined" {% if active_config.charts.campaign_channel_performance.mode == 'combined' %}selected{% endif %}>combined</option>
+            <option value="split" {% if active_config.charts.campaign_channel_performance.mode == 'split' %}selected{% endif %}>split</option>
+          </select>
+
+          <label for="split_spend_type">Split Spend Type</label>
+          <select id="split_spend_type" name="split_spend_type" class="trend-select">
+            <option value="donut" {% if active_config.charts.campaign_channel_performance.split_spend_type == 'donut' %}selected{% endif %}>donut</option>
+            <option value="pie" {% if active_config.charts.campaign_channel_performance.split_spend_type == 'pie' %}selected{% endif %}>pie</option>
+            <option value="vertical_bar" {% if active_config.charts.campaign_channel_performance.split_spend_type == 'vertical_bar' %}selected{% endif %}>vertical_bar</option>
+            <option value="horizontal_bar" {% if active_config.charts.campaign_channel_performance.split_spend_type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
+          </select>
+
+          <label for="split_revenue_type">Split Revenue Type</label>
+          <select id="split_revenue_type" name="split_revenue_type" class="trend-select">
+            <option value="donut" {% if active_config.charts.campaign_channel_performance.split_revenue_type == 'donut' %}selected{% endif %}>donut</option>
+            <option value="pie" {% if active_config.charts.campaign_channel_performance.split_revenue_type == 'pie' %}selected{% endif %}>pie</option>
+            <option value="vertical_bar" {% if active_config.charts.campaign_channel_performance.split_revenue_type == 'vertical_bar' %}selected{% endif %}>vertical_bar</option>
+            <option value="horizontal_bar" {% if active_config.charts.campaign_channel_performance.split_revenue_type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
+          </select>
+
+          <label for="show_latest_sales_table">Show Latest Sales Orders Table</label>
+          <select id="show_latest_sales_table" name="show_latest_sales_table" class="trend-select">
+            <option value="true" {% if active_config.charts.latest_sales_orders.show_table %}selected{% endif %}>true</option>
+            <option value="false" {% if not active_config.charts.latest_sales_orders.show_table %}selected{% endif %}>false</option>
+          </select>
+
+          <label for="show_latest_campaigns_table">Show Latest Campaigns Table</label>
+          <select id="show_latest_campaigns_table" name="show_latest_campaigns_table" class="trend-select">
+            <option value="true" {% if active_config.charts.latest_campaigns.show_table %}selected{% endif %}>true</option>
+            <option value="false" {% if not active_config.charts.latest_campaigns.show_table %}selected{% endif %}>false</option>
+          </select>
+
+          <button type="submit" class="save-config-btn">Save Active Options</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
