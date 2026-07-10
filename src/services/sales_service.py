@@ -10,6 +10,7 @@ import yaml
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SALES_CSV = BASE_DIR / "data" / "sample_sales.csv"
 ORDERS_CSV = BASE_DIR / "data" / "sample_orders.csv"
+CAMPAIGNS_CSV = BASE_DIR / "data" / "sample_campaign_performance.csv"
 CONFIG_YAML = BASE_DIR / "config" / "dashboard_config.yaml"
 VALID_TREND_GRAIN = {"daily", "weekly", "monthly"}
 VALID_REVENUE_TREND_STYLES = {"line", "area"}
@@ -293,11 +294,96 @@ def aggregate_revenue_trend(sales_rows: list[dict[str, str]], granularity: str) 
     }
 
 
+def aggregate_campaign_roas_trend(campaign_rows: list[dict[str, str]], granularity: str) -> dict[str, list]:
+    period = granularity if granularity in VALID_TREND_GRAIN else "daily"
+    spend_by_period: dict[str, float] = defaultdict(float)
+    revenue_by_period: dict[str, float] = defaultdict(float)
+    bucket_by_period = {
+        "weekly": lambda dt: dt - timedelta(days=dt.weekday()),  # Monday start.
+        "monthly": lambda dt: dt.replace(day=1),
+    }
+    resolve_bucket = bucket_by_period.get(period, lambda dt: dt)
+
+    for row in campaign_rows:
+        start_date = _parse_iso_date(row.get("start_date", ""))
+        end_date = _parse_iso_date(row.get("end_date", ""))
+        if not start_date or not end_date or end_date < start_date:
+            continue
+
+        total_spend = _to_float(row.get("spend", "0"))
+        total_revenue = _to_float(row.get("revenue", "0"))
+        campaign_days = (end_date - start_date).days + 1
+        if campaign_days <= 0:
+            continue
+
+        daily_spend = total_spend / campaign_days
+        daily_revenue = total_revenue / campaign_days
+
+        current_day = start_date
+        while current_day <= end_date:
+            bucket_date = resolve_bucket(current_day)
+            bucket_label = bucket_date.isoformat()
+            spend_by_period[bucket_label] += daily_spend
+            revenue_by_period[bucket_label] += daily_revenue
+            current_day += timedelta(days=1)
+
+    sorted_labels = sorted(revenue_by_period.keys())
+    roas_values = [
+        round(revenue_by_period[label] / spend_by_period[label], 2)
+        if spend_by_period[label]
+        else 0
+        for label in sorted_labels
+    ]
+
+    return {
+        "labels": sorted_labels,
+        "values": roas_values,
+    }
+
+
+def aggregate_campaign_spend_trend(campaign_rows: list[dict[str, str]], granularity: str) -> dict[str, list]:
+    period = granularity if granularity in VALID_TREND_GRAIN else "daily"
+    spend_by_period: dict[str, float] = defaultdict(float)
+    bucket_by_period = {
+        "weekly": lambda dt: dt - timedelta(days=dt.weekday()),  # Monday start.
+        "monthly": lambda dt: dt.replace(day=1),
+    }
+    resolve_bucket = bucket_by_period.get(period, lambda dt: dt)
+
+    for row in campaign_rows:
+        start_date = _parse_iso_date(row.get("start_date", ""))
+        end_date = _parse_iso_date(row.get("end_date", ""))
+        if not start_date or not end_date or end_date < start_date:
+            continue
+
+        total_spend = _to_float(row.get("spend", "0"))
+        campaign_days = (end_date - start_date).days + 1
+        if campaign_days <= 0:
+            continue
+
+        daily_spend = total_spend / campaign_days
+
+        current_day = start_date
+        while current_day <= end_date:
+            bucket_date = resolve_bucket(current_day)
+            bucket_label = bucket_date.isoformat()
+            spend_by_period[bucket_label] += daily_spend
+            current_day += timedelta(days=1)
+
+    sorted_labels = sorted(spend_by_period.keys())
+
+    return {
+        "labels": sorted_labels,
+        "values": [round(spend_by_period[label], 2) for label in sorted_labels],
+    }
+
+
 def build_dashboard_data(trend_granularity: str = "daily") -> dict:
     selected_trend = trend_granularity if trend_granularity in VALID_TREND_GRAIN else "daily"
     dashboard_config = load_dashboard_config()
     sales_rows = read_csv_rows(SALES_CSV)
     orders_rows = read_csv_rows(ORDERS_CSV)
+    campaign_rows = read_csv_rows(CAMPAIGNS_CSV)
 
     total_revenue = sum(_to_float(row.get("revenue", "0")) for row in sales_rows)
     total_profit = sum(_to_float(row.get("profit", "0")) for row in sales_rows)
@@ -324,9 +410,33 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
         status = row.get("order_status", "Unknown")
         status_counts[status] += 1
 
+    campaign_spend = sum(_to_float(row.get("spend", "0")) for row in campaign_rows)
+    campaign_revenue = sum(_to_float(row.get("revenue", "0")) for row in campaign_rows)
+    campaign_conversions = sum(_to_int(row.get("conversions", "0")) for row in campaign_rows)
+    campaign_clicks = sum(_to_int(row.get("clicks", "0")) for row in campaign_rows)
+    avg_campaign_roas = campaign_revenue / campaign_spend if campaign_spend else 0
+
+    spend_by_channel: dict[str, float] = defaultdict(float)
+    revenue_by_channel: dict[str, float] = defaultdict(float)
+
+    for row in campaign_rows:
+        channel = row.get("channel", "Unknown")
+        spend_by_channel[channel] += _to_float(row.get("spend", "0"))
+        revenue_by_channel[channel] += _to_float(row.get("revenue", "0"))
+
     top_products_top_n = dashboard_config["charts"]["top_products_by_units"]["top_n"]
     include_others = dashboard_config["charts"]["top_products_by_units"]["include_others"]
     latest_sales_last_n_rows = dashboard_config["charts"]["latest_sales_orders"]["last_n_rows"]
+    sorted_channels = sorted(
+        spend_by_channel.keys(),
+        key=lambda channel_name: revenue_by_channel[channel_name],
+        reverse=True,
+    )
+    latest_campaigns = sorted(
+        campaign_rows,
+        key=lambda row: row.get("start_date", ""),
+        reverse=True,
+    )[:latest_sales_last_n_rows]
     ranked_products = sorted(units_by_product.items(), key=lambda x: x[1], reverse=True)
     top_products = ranked_products[:top_products_top_n]
     if include_others and len(ranked_products) > top_products_top_n:
@@ -342,6 +452,21 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "avg_order_value": round(avg_order_value, 2),
         },
         "revenue_trend": aggregate_revenue_trend(sales_rows, selected_trend),
+        "campaign_kpis": {
+            "total_spend": round(campaign_spend, 2),
+            "total_campaign_revenue": round(campaign_revenue, 2),
+            "total_conversions": campaign_conversions,
+            "total_clicks": campaign_clicks,
+            "avg_roas": round(avg_campaign_roas, 2),
+            "campaign_count": len(campaign_rows),
+        },
+        "campaign_channel_performance": {
+            "labels": sorted_channels,
+            "spend_values": [round(spend_by_channel[channel], 2) for channel in sorted_channels],
+            "revenue_values": [round(revenue_by_channel[channel], 2) for channel in sorted_channels],
+        },
+        "campaign_roas_trend": aggregate_campaign_roas_trend(campaign_rows, selected_trend),
+        "campaign_spend_trend": aggregate_campaign_spend_trend(campaign_rows, selected_trend),
         "chart_config": {
             "revenue_trend_style": dashboard_config["charts"]["revenue_trend"]["style"],
             "revenue_trend_line_color": dashboard_config["charts"]["revenue_trend"]["line_color"],
@@ -379,4 +504,5 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "values": list(status_counts.values()),
         },
         "latest_sales": sales_rows[-latest_sales_last_n_rows:],
+        "latest_campaigns": latest_campaigns,
     }

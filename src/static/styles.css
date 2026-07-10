@@ -112,6 +112,10 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.campaign-kpi-grid {
+  margin-top: -0.2rem;
+}
+
 .kpi-card {
   background: var(--panel);
   border: 1px solid rgba(63, 73, 103, 0.12);
@@ -131,6 +135,10 @@ h1 {
 .kpi-card h2 {
   margin: 0.4rem 0 0;
   font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.kpi-card-campaign {
+  border-color: rgba(26, 127, 90, 0.22);
 }
 
 .chart-grid {

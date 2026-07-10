@@ -54,10 +54,29 @@
         </article>
       </section>
 
+      <section class="kpi-grid campaign-kpi-grid">
+        <article class="kpi-card kpi-card-campaign">
+          <p>Campaign Spend</p>
+          <h2>${{ '%.2f'|format(data.campaign_kpis.total_spend) }}</h2>
+        </article>
+        <article class="kpi-card kpi-card-campaign">
+          <p>Campaign Revenue</p>
+          <h2>${{ '%.2f'|format(data.campaign_kpis.total_campaign_revenue) }}</h2>
+        </article>
+        <article class="kpi-card kpi-card-campaign">
+          <p>Campaign Conversions</p>
+          <h2>{{ data.campaign_kpis.total_conversions }}</h2>
+        </article>
+        <article class="kpi-card kpi-card-campaign">
+          <p>Average ROAS</p>
+          <h2>{{ '%.2f'|format(data.campaign_kpis.avg_roas) }}x</h2>
+        </article>
+      </section>
+
       <section class="chart-grid">
         <article class="panel panel-wide">
           <div class="panel-head">
-            <h3>Revenue Trend</h3>
+            <h3>Revenue + Campaign Spend + ROAS Trend</h3>
             <form method="get" class="trend-form">
               <label for="trend" class="sr-only">Revenue Trend Granularity</label>
               <select id="trend" name="trend" class="trend-select" onchange="this.form.submit()">
@@ -105,6 +124,15 @@
           </div>
           <canvas id="segmentChart"></canvas>
         </article>
+
+        <article class="panel panel-wide">
+          <div class="panel-head">
+            <h3>Campaign Channel Performance</h3>
+            <span>Spend vs Revenue</span>
+          </div>
+          <canvas id="campaignChannelChart"></canvas>
+        </article>
+
       </section>
 
       <section class="panel table-panel">
@@ -141,6 +169,41 @@
           </table>
         </div>
       </section>
+
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <h3>Latest Campaigns</h3>
+          <span>Last {{ data.chart_config.latest_sales_orders_last_n_rows }} Rows</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campaign</th>
+                <th>Channel</th>
+                <th>Region</th>
+                <th>Start Date</th>
+                <th>Spend</th>
+                <th>Revenue</th>
+                <th>ROAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in data.latest_campaigns %}
+              <tr>
+                <td>{{ row.campaign_name }}</td>
+                <td>{{ row.channel }}</td>
+                <td>{{ row.region }}</td>
+                <td>{{ row.start_date }}</td>
+                <td>${{ row.spend }}</td>
+                <td>${{ row.revenue }}</td>
+                <td>{{ row.roas }}x</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -160,6 +223,26 @@
       const revenueBySegmentType = dashboardData.chart_config?.revenue_by_segment_type || "pie";
       const topProductsColor = dashboardData.chart_config?.top_products_by_units_color || "#2f6f91";
       const isRevenueArea = revenueTrendStyle === "area";
+      const roasByLabel = Object.fromEntries(
+        (dashboardData.campaign_roas_trend?.labels || []).map((label, idx) => [
+          label,
+          dashboardData.campaign_roas_trend.values[idx],
+        ])
+      );
+      const spendByLabel = Object.fromEntries(
+        (dashboardData.campaign_spend_trend?.labels || []).map((label, idx) => [
+          label,
+          dashboardData.campaign_spend_trend.values[idx],
+        ])
+      );
+      const alignedCampaignRoasValues = (dashboardData.revenue_trend?.labels || []).map(
+        (label) =>
+          Object.prototype.hasOwnProperty.call(roasByLabel, label) ? roasByLabel[label] : null
+      );
+      const alignedCampaignSpendValues = (dashboardData.revenue_trend?.labels || []).map(
+        (label) =>
+          Object.prototype.hasOwnProperty.call(spendByLabel, label) ? spendByLabel[label] : null
+      );
 
       function formatCompactNumber(value) {
         const num = Number(value);
@@ -169,6 +252,16 @@
           compactDisplay: "short",
           maximumFractionDigits: 1,
         }).format(num);
+      }
+
+      function formatRatioNumber(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return `${value}x`;
+
+        return `${num
+          .toFixed(2)
+          .replace(/\.00$/, "")
+          .replace(/(\.\d)0$/, "$1")}x`;
       }
 
       new Chart(document.getElementById("revenueTrendChart"), {
@@ -184,6 +277,29 @@
               fill: isRevenueArea,
               pointRadius: 2,
               tension: 0.25,
+              yAxisID: "y",
+            },
+            {
+              label: "Campaign ROAS",
+              data: alignedCampaignRoasValues,
+              borderColor: "#2f6f91",
+              backgroundColor: "rgba(47, 111, 145, 0.15)",
+              fill: false,
+              pointRadius: 2,
+              borderDash: [6, 4],
+              tension: 0.2,
+              yAxisID: "y1",
+            },
+            {
+              label: "Campaign Spend",
+              data: alignedCampaignSpendValues,
+              borderColor: "#b93c5d",
+              backgroundColor: "rgba(185, 60, 93, 0.12)",
+              fill: false,
+              pointRadius: 2,
+              borderDash: [3, 3],
+              tension: 0.22,
+              yAxisID: "y2",
             },
           ],
         },
@@ -209,12 +325,40 @@
               },
               grid: { color: gridColor },
             },
+            y1: {
+              position: "right",
+              ticks: {
+                color: tickColor,
+                callback: (value) => formatRatioNumber(value),
+              },
+              grid: { drawOnChartArea: false },
+            },
+            y2: {
+              position: "left",
+              offset: true,
+              ticks: {
+                color: "#b93c5d",
+                callback: (value) => formatCompactNumber(value),
+              },
+              grid: { drawOnChartArea: false },
+            },
           },
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: true,
+              position: "bottom",
+            },
             tooltip: {
               callbacks: {
-                label: (context) => `Revenue: ${formatCompactNumber(context.parsed.y)}`,
+                label: (context) => {
+                  if (context.dataset.label === "Campaign ROAS") {
+                    return `Campaign ROAS: ${formatRatioNumber(context.parsed.y)}`;
+                  }
+                  if (context.dataset.label === "Campaign Spend") {
+                    return `Campaign Spend: ${formatCompactNumber(context.parsed.y)}`;
+                  }
+                  return `Revenue: ${formatCompactNumber(context.parsed.y)}`;
+                },
               },
             },
           },
@@ -482,6 +626,51 @@
         },
         options: segmentOptions,
       });
+
+      new Chart(document.getElementById("campaignChannelChart"), {
+        type: "bar",
+        data: {
+          labels: dashboardData.campaign_channel_performance.labels,
+          datasets: [
+            {
+              label: "Spend",
+              data: dashboardData.campaign_channel_performance.spend_values,
+              backgroundColor: "rgba(185, 60, 93, 0.8)",
+              borderRadius: 6,
+            },
+            {
+              label: "Revenue",
+              data: dashboardData.campaign_channel_performance.revenue_values,
+              backgroundColor: "rgba(26, 127, 90, 0.8)",
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: { color: tickColor },
+              grid: { display: false },
+            },
+            y: {
+              ticks: {
+                color: tickColor,
+                callback: (value) => formatCompactNumber(value),
+              },
+              grid: { color: gridColor },
+            },
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: "bottom",
+            },
+          },
+        },
+      });
+
     </script>
   </body>
 </html>

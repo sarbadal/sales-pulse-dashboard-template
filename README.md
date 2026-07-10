@@ -31,6 +31,43 @@ Edit this file to change title text, chart styles, colors, and table size.
 - Use valid YAML values (`true`/`false`, numbers without quotes when possible).
 - Restart the app after config changes.
 
+## Revenue + Campaign ROAS Trend Logic
+
+The combined trend chart plots:
+
+- Revenue (from sales CSV)
+- Campaign ROAS (recomputed from campaign spend/revenue)
+
+Campaign ROAS continuity is calculated from active campaign date ranges (`start_date` to `end_date`) instead of only campaign start dates.
+
+### How Campaign ROAS Is Computed
+
+1. For each campaign row:
+	- Parse `start_date` and `end_date`.
+	- Compute campaign duration in days:
+	  - `campaign_days = (end_date - start_date) + 1`
+	- Distribute totals uniformly across campaign days:
+	  - `daily_spend = spend / campaign_days`
+	  - `daily_revenue = revenue / campaign_days`
+
+2. For each day in the campaign range:
+	- Map the day into the selected bucket (`daily`, `weekly`, `monthly`).
+	- Add `daily_spend` and `daily_revenue` to that bucket totals.
+
+3. After all campaigns are processed, compute bucket ROAS:
+	- `roas_bucket = total_revenue_bucket / total_spend_bucket`
+	- Rounded to 2 decimals.
+
+### Granularity Bucketing Rules
+
+- `daily`: exact date bucket
+- `weekly`: Monday-start week bucket
+- `monthly`: first day of month bucket
+
+### Important Note
+
+The trend chart uses recomputed ROAS from aggregated spend/revenue per bucket. It does not directly plot the row-level `roas` column from the campaign CSV.
+
 ## Run locally
 
 1. Create and activate a virtual environment.
