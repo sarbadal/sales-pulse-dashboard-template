@@ -99,6 +99,11 @@ h1 {
   line-height: 1.05;
 }
 
+#dashboardTitle {
+  white-space: nowrap;
+  font-size: clamp(1.5rem, 3.1vw, 2.6rem);
+}
+
 .subtitle {
   margin: 0;
   color: var(--ink-700);
@@ -227,6 +232,26 @@ h1 {
   min-height: 0;
 }
 
+.dashboard-footer {
+  margin-top: 1.2rem;
+  padding: 0.9rem 0.2rem 0.2rem;
+  border-top: 1px solid rgba(63, 73, 103, 0.18);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--ink-700);
+}
+
+.dashboard-footer p,
+.dashboard-footer small {
+  margin: 0;
+}
+
+.dashboard-footer small {
+  font-size: 0.82rem;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -282,6 +307,10 @@ tbody tr:hover {
   .panel-wide {
     grid-column: span 1;
   }
+
+  #dashboardTitle {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 600px) {
@@ -300,5 +329,10 @@ tbody tr:hover {
 
   .panel canvas {
     height: 150px !important;
+  }
+
+  .dashboard-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

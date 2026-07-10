@@ -17,6 +17,8 @@ VALID_REVENUE_TREND_STYLES = {"line", "area"}
 VALID_REGION_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 VALID_ORDER_STATUS_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 VALID_SEGMENT_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
+VALID_CAMPAIGN_CHANNEL_PERFORMANCE_MODES = {"combined", "split"}
+VALID_CAMPAIGN_CHANNEL_CHART_TYPES = {"donut", "vertical_bar", "horizontal_bar", "pie"}
 
 
 def _normalize_color(value: object, fallback: str) -> str:
@@ -94,7 +96,7 @@ def read_csv_rows(path: Path) -> list[dict[str, str]]:
 def load_dashboard_config() -> dict:
     default_config = {
         "branding": {
-            "dashboard_title": "Sales Pulse Dashboard",
+            "dashboard_title": "Sales and Campaign Performance Dashboard",
             "dashboard_title_color": "#1f2435",
         },
         "charts": {
@@ -115,6 +117,11 @@ def load_dashboard_config() -> dict:
                 "type": "pie",
                 "colors": ["#b93c5d", "#ed8d21", "#1a7f5a", "#2f6f91"],
             },
+            "campaign_channel_performance": {
+                "mode": "combined",
+                "split_spend_type": "vertical_bar",
+                "split_revenue_type": "vertical_bar",
+            },
             "top_products_by_units": {
                 "top_n": 5,
                 "color": "#2f6f91",
@@ -122,6 +129,11 @@ def load_dashboard_config() -> dict:
             },
             "latest_sales_orders": {
                 "last_n_rows": 8,
+                "show_table": True,
+            },
+            "latest_campaigns": {
+                "last_n_rows": 8,
+                "show_table": True,
             },
         }
     }
@@ -190,6 +202,43 @@ def load_dashboard_config() -> dict:
         default_config["charts"]["revenue_by_segment"]["colors"],
     )
 
+    campaign_channel_performance_mode = (
+        raw_config.get("charts", {})
+        .get("campaign_channel_performance", {})
+        .get("mode", default_config["charts"]["campaign_channel_performance"]["mode"])
+    )
+    campaign_channel_performance_mode = str(campaign_channel_performance_mode).strip().lower()
+    if campaign_channel_performance_mode not in VALID_CAMPAIGN_CHANNEL_PERFORMANCE_MODES:
+        campaign_channel_performance_mode = default_config["charts"]["campaign_channel_performance"]["mode"]
+
+    campaign_channel_split_spend_type = (
+        raw_config.get("charts", {})
+        .get("campaign_channel_performance", {})
+        .get(
+            "split_spend_type",
+            default_config["charts"]["campaign_channel_performance"]["split_spend_type"],
+        )
+    )
+    campaign_channel_split_spend_type = str(campaign_channel_split_spend_type).strip().lower()
+    if campaign_channel_split_spend_type not in VALID_CAMPAIGN_CHANNEL_CHART_TYPES:
+        campaign_channel_split_spend_type = default_config["charts"]["campaign_channel_performance"][
+            "split_spend_type"
+        ]
+
+    campaign_channel_split_revenue_type = (
+        raw_config.get("charts", {})
+        .get("campaign_channel_performance", {})
+        .get(
+            "split_revenue_type",
+            default_config["charts"]["campaign_channel_performance"]["split_revenue_type"],
+        )
+    )
+    campaign_channel_split_revenue_type = str(campaign_channel_split_revenue_type).strip().lower()
+    if campaign_channel_split_revenue_type not in VALID_CAMPAIGN_CHANNEL_CHART_TYPES:
+        campaign_channel_split_revenue_type = default_config["charts"]["campaign_channel_performance"][
+            "split_revenue_type"
+        ]
+
     top_products_top_n = _normalize_positive_int(
         raw_config.get("charts", {}).get("top_products_by_units", {}).get("top_n"),
         default_config["charts"]["top_products_by_units"]["top_n"],
@@ -206,6 +255,19 @@ def load_dashboard_config() -> dict:
     latest_sales_last_n_rows = _normalize_positive_int(
         raw_config.get("charts", {}).get("latest_sales_orders", {}).get("last_n_rows"),
         default_config["charts"]["latest_sales_orders"]["last_n_rows"],
+    )
+    latest_sales_show_table = _normalize_bool(
+        raw_config.get("charts", {}).get("latest_sales_orders", {}).get("show_table"),
+        default_config["charts"]["latest_sales_orders"]["show_table"],
+    )
+
+    latest_campaigns_last_n_rows = _normalize_positive_int(
+        raw_config.get("charts", {}).get("latest_campaigns", {}).get("last_n_rows"),
+        default_config["charts"]["latest_campaigns"]["last_n_rows"],
+    )
+    latest_campaigns_show_table = _normalize_bool(
+        raw_config.get("charts", {}).get("latest_campaigns", {}).get("show_table"),
+        default_config["charts"]["latest_campaigns"]["show_table"],
     )
 
     dashboard_title = _normalize_text(
@@ -249,6 +311,11 @@ def load_dashboard_config() -> dict:
                 "type": segment_chart_type,
                 "colors": segment_colors,
             },
+            "campaign_channel_performance": {
+                "mode": campaign_channel_performance_mode,
+                "split_spend_type": campaign_channel_split_spend_type,
+                "split_revenue_type": campaign_channel_split_revenue_type,
+            },
             "top_products_by_units": {
                 "top_n": top_products_top_n,
                 "color": top_products_color,
@@ -256,6 +323,11 @@ def load_dashboard_config() -> dict:
             },
             "latest_sales_orders": {
                 "last_n_rows": latest_sales_last_n_rows,
+                "show_table": latest_sales_show_table,
+            },
+            "latest_campaigns": {
+                "last_n_rows": latest_campaigns_last_n_rows,
+                "show_table": latest_campaigns_show_table,
             },
         }
     }
@@ -418,15 +490,19 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
 
     spend_by_channel: dict[str, float] = defaultdict(float)
     revenue_by_channel: dict[str, float] = defaultdict(float)
+    spend_by_region: dict[str, float] = defaultdict(float)
 
     for row in campaign_rows:
         channel = row.get("channel", "Unknown")
+        region = row.get("region", "Unknown")
         spend_by_channel[channel] += _to_float(row.get("spend", "0"))
         revenue_by_channel[channel] += _to_float(row.get("revenue", "0"))
+        spend_by_region[region] += _to_float(row.get("spend", "0"))
 
     top_products_top_n = dashboard_config["charts"]["top_products_by_units"]["top_n"]
     include_others = dashboard_config["charts"]["top_products_by_units"]["include_others"]
     latest_sales_last_n_rows = dashboard_config["charts"]["latest_sales_orders"]["last_n_rows"]
+    latest_campaigns_last_n_rows = dashboard_config["charts"]["latest_campaigns"]["last_n_rows"]
     sorted_channels = sorted(
         spend_by_channel.keys(),
         key=lambda channel_name: revenue_by_channel[channel_name],
@@ -436,13 +512,18 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
         campaign_rows,
         key=lambda row: row.get("start_date", ""),
         reverse=True,
-    )[:latest_sales_last_n_rows]
+    )[:latest_campaigns_last_n_rows]
     ranked_products = sorted(units_by_product.items(), key=lambda x: x[1], reverse=True)
     top_products = ranked_products[:top_products_top_n]
     if include_others and len(ranked_products) > top_products_top_n:
         others_units = sum(value for _, value in ranked_products[top_products_top_n:])
         if others_units > 0:
             top_products.append(("Others", others_units))
+
+    region_labels = list(revenue_by_region.keys())
+    for region in spend_by_region:
+        if region not in revenue_by_region:
+            region_labels.append(region)
 
     return {
         "kpis": {
@@ -477,10 +558,24 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
             "order_status_colors": dashboard_config["charts"]["order_status"]["colors"],
             "revenue_by_segment_type": dashboard_config["charts"]["revenue_by_segment"]["type"],
             "revenue_by_segment_colors": dashboard_config["charts"]["revenue_by_segment"]["colors"],
+            "campaign_channel_performance_mode": dashboard_config["charts"]["campaign_channel_performance"]["mode"],
+            "campaign_channel_performance_split_spend_type": dashboard_config["charts"][
+                "campaign_channel_performance"
+            ]["split_spend_type"],
+            "campaign_channel_performance_split_revenue_type": dashboard_config["charts"][
+                "campaign_channel_performance"
+            ]["split_revenue_type"],
             "top_products_by_units_top_n": top_products_top_n,
             "top_products_by_units_color": dashboard_config["charts"]["top_products_by_units"]["color"],
             "top_products_by_units_include_others": include_others,
             "latest_sales_orders_last_n_rows": latest_sales_last_n_rows,
+            "latest_sales_orders_show_table": dashboard_config["charts"]["latest_sales_orders"][
+                "show_table"
+            ],
+            "latest_campaigns_last_n_rows": latest_campaigns_last_n_rows,
+            "latest_campaigns_show_table": dashboard_config["charts"]["latest_campaigns"][
+                "show_table"
+            ],
         },
         "branding": {
             "dashboard_title": dashboard_config["branding"]["dashboard_title"],
@@ -488,8 +583,11 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
         },
         "selected_trend": selected_trend,
         "region_breakdown": {
-            "labels": list(revenue_by_region.keys()),
-            "values": [round(value, 2) for value in revenue_by_region.values()],
+            "labels": region_labels,
+            "values": [round(revenue_by_region.get(region, 0), 2) for region in region_labels],
+            "campaign_spend_values": [
+                round(spend_by_region.get(region, 0), 2) for region in region_labels
+            ],
         },
         "segment_breakdown": {
             "labels": list(revenue_by_segment.keys()),

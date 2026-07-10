@@ -19,11 +19,17 @@ Edit this file to change title text, chart styles, colors, and table size.
 - `charts.revenue_by_region.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
 - `charts.revenue_by_segment.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
 - `charts.order_status.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
+- `charts.campaign_channel_performance.mode`: `combined` or `split`.
+- `charts.campaign_channel_performance.split_spend_type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar` (used when mode is `split`).
+- `charts.campaign_channel_performance.split_revenue_type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar` (used when mode is `split`).
 - `charts.*.colors`: Color list used in region/segment/status charts.
 - `charts.top_products_by_units.top_n`: Positive integer for number of products.
 - `charts.top_products_by_units.color`: Single bar color for top products chart.
 - `charts.top_products_by_units.include_others`: `true` or `false` to show/hide Others bar.
 - `charts.latest_sales_orders.last_n_rows`: Positive integer for rows in latest orders table.
+- `charts.latest_sales_orders.show_table`: `true` or `false` to show/hide Latest Sales Orders table.
+- `charts.latest_campaigns.last_n_rows`: Positive integer for rows in latest campaigns table.
+- `charts.latest_campaigns.show_table`: `true` or `false` to show/hide Latest Campaigns table.
 
 ### Notes
 

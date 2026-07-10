@@ -1,6 +1,6 @@
 branding:
   # Main dashboard heading text (H1) and browser tab title.
-  dashboard_title: "Sales Pulse Dashboard"
+  dashboard_title: "Performance Dashboard: Sales & Campaigns"
 
   # CSS color for the dashboard heading text.
   # Example: "#1f2435" or "rgb(31, 36, 53)" or color name like "navy"
@@ -80,13 +80,24 @@ charts:
   latest_sales_orders:
     # Number of latest rows to show in the Latest Sales Orders table.
     # Use a positive integer (1, 2, 3, ...).
-    last_n_rows: 6
+    last_n_rows: 3
+
+    # Show or hide the Latest Sales Orders table.
+    show_table: true
+
+  latest_campaigns:
+    # Number of latest rows to show in the Latest Campaigns table.
+    # Use a positive integer (1, 2, 3, ...).
+    last_n_rows: 3
+
+    # Show or hide the Latest Campaigns table.
+    show_table: true
 
   revenue_trend:
     # Available options: area, line
     # - area: line with filled background
     # - line: plain line without fill
-    style: line
+    style: area
 
     # CSS color for line/border (hex, rgb, rgba, hsl are all valid)
     # Example: "#1a7f5a" or "rgb(30, 130, 76)" or color name like "red"
@@ -95,3 +106,17 @@ charts:
     # CSS color for area fill when style is "area"
     # Example: "rgba(26, 127, 90, 0.15)"
     area_color: "rgba(26, 127, 90, 0.15)"
+
+  campaign_channel_performance:
+    # Available options: combined, split
+    # - combined: single chart with both spend and revenue bars
+    # - split: two separate charts (one for spend, one for revenue)
+    mode: split
+
+    # Used only when mode is "split"
+    # Available options: donut, pie, vertical_bar, horizontal_bar
+    split_spend_type: donut
+
+    # Used only when mode is "split"
+    # Available options: donut, pie, vertical_bar, horizontal_bar
+    split_revenue_type: horizontal_bar

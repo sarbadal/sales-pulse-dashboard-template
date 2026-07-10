@@ -31,8 +31,8 @@
           </div>
           <p class="eyebrow">Daily Commerce Snapshot</p>
           <h1 id="dashboardTitle">{{ data.branding.dashboard_title }}</h1>
+          <p class="subtitle">Simple Flask dashboard powered by CSV data.</p>
         </div>
-        <p class="subtitle">Simple Flask dashboard powered by CSV data.</p>
       </header>
 
       <section class="kpi-grid">
@@ -125,6 +125,23 @@
           <canvas id="segmentChart"></canvas>
         </article>
 
+        {% if data.chart_config.campaign_channel_performance_mode == 'split' %}
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Campaign Spend by Channel</h3>
+            <span>Channel Breakdown</span>
+          </div>
+          <canvas id="campaignChannelSpendChart"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Campaign Revenue by Channel</h3>
+            <span>Channel Breakdown</span>
+          </div>
+          <canvas id="campaignChannelRevenueChart"></canvas>
+        </article>
+        {% else %}
         <article class="panel panel-wide">
           <div class="panel-head">
             <h3>Campaign Channel Performance</h3>
@@ -132,9 +149,11 @@
           </div>
           <canvas id="campaignChannelChart"></canvas>
         </article>
+        {% endif %}
 
       </section>
 
+      {% if data.chart_config.latest_sales_orders_show_table %}
       <section class="panel table-panel">
         <div class="panel-head">
           <h3>Latest Sales Orders</h3>
@@ -169,11 +188,13 @@
           </table>
         </div>
       </section>
+      {% endif %}
 
+      {% if data.chart_config.latest_campaigns_show_table %}
       <section class="panel table-panel">
         <div class="panel-head">
           <h3>Latest Campaigns</h3>
-          <span>Last {{ data.chart_config.latest_sales_orders_last_n_rows }} Rows</span>
+          <span>Last {{ data.chart_config.latest_campaigns_last_n_rows }} Rows</span>
         </div>
         <div class="table-wrap">
           <table>
@@ -204,6 +225,15 @@
           </table>
         </div>
       </section>
+      {% endif %}
+
+      <footer class="dashboard-footer">
+        <div>
+          <p>Sales and Campaign Performance Dashboard</p>
+          <small>Built with Flask, CSV, and Chart.js</small>
+        </div>
+        <small>&copy; 2026 Sales Pulse. All rights reserved.</small>
+      </footer>
     </main>
 
     <script>
@@ -222,6 +252,14 @@
       const orderStatusType = dashboardData.chart_config?.order_status_type || "vertical_bar";
       const revenueBySegmentType = dashboardData.chart_config?.revenue_by_segment_type || "pie";
       const topProductsColor = dashboardData.chart_config?.top_products_by_units_color || "#2f6f91";
+      const campaignChannelPerformanceMode =
+        dashboardData.chart_config?.campaign_channel_performance_mode || "combined";
+      const campaignChannelSplitSpendType =
+        dashboardData.chart_config?.campaign_channel_performance_split_spend_type ||
+        "vertical_bar";
+      const campaignChannelSplitRevenueType =
+        dashboardData.chart_config?.campaign_channel_performance_split_revenue_type ||
+        "vertical_bar";
       const isRevenueArea = revenueTrendStyle === "area";
       const roasByLabel = Object.fromEntries(
         (dashboardData.campaign_roas_trend?.labels || []).map((label, idx) => [
@@ -264,6 +302,85 @@
           .replace(/(\.\d)0$/, "$1")}x`;
       }
 
+      function resolveBasicChartType(configType) {
+        if (configType === "pie") return "pie";
+        if (configType === "donut") return "doughnut";
+        return "bar";
+      }
+
+      function buildSingleChannelOptions(configType) {
+        const isBar = configType === "vertical_bar" || configType === "horizontal_bar";
+        const options = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: !isBar,
+              position: isBar ? "bottom" : "right",
+            },
+          },
+        };
+
+        if (isBar) {
+          options.indexAxis = configType === "horizontal_bar" ? "y" : "x";
+          options.scales = {
+            x: {
+              ticks: {
+                color: tickColor,
+                callback: (value) =>
+                  configType === "horizontal_bar"
+                    ? formatCompactNumber(value)
+                    : dashboardData.campaign_channel_performance.labels[value] || value,
+              },
+              grid: {
+                display: configType !== "horizontal_bar",
+                color: gridColor,
+              },
+            },
+            y: {
+              ticks: {
+                color: tickColor,
+                callback: (value) =>
+                  configType === "horizontal_bar"
+                    ? dashboardData.campaign_channel_performance.labels[value] || value
+                    : formatCompactNumber(value),
+              },
+              grid: {
+                display: configType === "horizontal_bar",
+                color: gridColor,
+              },
+            },
+          };
+        }
+
+        return options;
+      }
+
+      function buildSingleChannelDataset(label, values, color, configType) {
+        const isBar = configType === "vertical_bar" || configType === "horizontal_bar";
+        const palette = ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d", "#7e8aaf", "#4e597c"];
+        const seriesColors = dashboardData.campaign_channel_performance.labels.map(
+          (_, idx) => palette[idx % palette.length]
+        );
+
+        if (isBar) {
+          return {
+            label,
+            data: values,
+            backgroundColor: color,
+            borderRadius: 6,
+          };
+        }
+
+        return {
+          label,
+          data: values,
+          backgroundColor: seriesColors,
+          borderWidth: 2,
+          borderColor: "#f6f2e8",
+        };
+      }
+
       new Chart(document.getElementById("revenueTrendChart"), {
         type: "line",
         data: {
@@ -283,8 +400,8 @@
               label: "Campaign ROAS",
               data: alignedCampaignRoasValues,
               borderColor: "#2f6f91",
-              backgroundColor: "rgba(47, 111, 145, 0.15)",
-              fill: false,
+              backgroundColor: isRevenueArea ? "rgba(47, 111, 145, 0.14)" : "rgba(47, 111, 145, 0)",
+              fill: isRevenueArea,
               pointRadius: 2,
               borderDash: [6, 4],
               tension: 0.2,
@@ -294,8 +411,8 @@
               label: "Campaign Spend",
               data: alignedCampaignSpendValues,
               borderColor: "#b93c5d",
-              backgroundColor: "rgba(185, 60, 93, 0.12)",
-              fill: false,
+              backgroundColor: isRevenueArea ? "rgba(185, 60, 93, 0.12)" : "rgba(185, 60, 93, 0)",
+              fill: isRevenueArea,
               pointRadius: 2,
               borderDash: [3, 3],
               tension: 0.22,
@@ -368,6 +485,8 @@
       const regionColors =
         dashboardData.chart_config?.revenue_by_region_colors ||
         ["#1a7f5a", "#2f6f91", "#ed8d21", "#b93c5d"];
+      const regionRevenueSeriesColor = "rgba(26, 127, 90, 0.85)";
+      const regionCampaignSpendSeriesColor = "rgba(185, 60, 93, 0.8)";
       const isRegionBar =
         revenueByRegionType === "vertical_bar" || revenueByRegionType === "horizontal_bar";
       const regionChartType =
@@ -382,7 +501,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: !isRegionBar,
+            display: true,
             position: "bottom",
           },
         },
@@ -426,13 +545,23 @@
           labels: dashboardData.region_breakdown.labels,
           datasets: [
             {
-              label: isRegionBar ? "Revenue" : undefined,
+              label: "Revenue",
               data: dashboardData.region_breakdown.values,
               backgroundColor: isRegionBar
-                ? dashboardData.region_breakdown.labels.map(
-                    (_, idx) => regionColors[idx % regionColors.length]
-                  )
+                ? regionRevenueSeriesColor
                 : regionColors,
+              borderWidth: isRegionBar ? 0 : 2,
+              borderColor: isRegionBar ? "transparent" : "#f6f2e8",
+              borderRadius: isRegionBar ? 8 : 0,
+            },
+            {
+              label: "Campaign Spend",
+              data: dashboardData.region_breakdown.campaign_spend_values,
+              backgroundColor: isRegionBar
+                ? regionCampaignSpendSeriesColor
+                : dashboardData.region_breakdown.labels.map(
+                    (_, idx) => regionColors[idx % regionColors.length]
+                  ),
               borderWidth: isRegionBar ? 0 : 2,
               borderColor: isRegionBar ? "transparent" : "#f6f2e8",
               borderRadius: isRegionBar ? 8 : 0,
@@ -627,49 +756,83 @@
         options: segmentOptions,
       });
 
-      new Chart(document.getElementById("campaignChannelChart"), {
-        type: "bar",
-        data: {
-          labels: dashboardData.campaign_channel_performance.labels,
-          datasets: [
-            {
-              label: "Spend",
-              data: dashboardData.campaign_channel_performance.spend_values,
-              backgroundColor: "rgba(185, 60, 93, 0.8)",
-              borderRadius: 6,
-            },
-            {
-              label: "Revenue",
-              data: dashboardData.campaign_channel_performance.revenue_values,
-              backgroundColor: "rgba(26, 127, 90, 0.8)",
-              borderRadius: 6,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              ticks: { color: tickColor },
-              grid: { display: false },
-            },
-            y: {
-              ticks: {
-                color: tickColor,
-                callback: (value) => formatCompactNumber(value),
+      if (campaignChannelPerformanceMode === "split") {
+        new Chart(document.getElementById("campaignChannelSpendChart"), {
+          type: resolveBasicChartType(campaignChannelSplitSpendType),
+          data: {
+            labels: dashboardData.campaign_channel_performance.labels,
+            datasets: [
+              buildSingleChannelDataset(
+                "Spend",
+                dashboardData.campaign_channel_performance.spend_values,
+                "rgba(185, 60, 93, 0.8)",
+                campaignChannelSplitSpendType
+              ),
+            ],
+          },
+          options: buildSingleChannelOptions(campaignChannelSplitSpendType),
+        });
+
+        new Chart(document.getElementById("campaignChannelRevenueChart"), {
+          type: resolveBasicChartType(campaignChannelSplitRevenueType),
+          data: {
+            labels: dashboardData.campaign_channel_performance.labels,
+            datasets: [
+              buildSingleChannelDataset(
+                "Revenue",
+                dashboardData.campaign_channel_performance.revenue_values,
+                "rgba(26, 127, 90, 0.8)",
+                campaignChannelSplitRevenueType
+              ),
+            ],
+          },
+          options: buildSingleChannelOptions(campaignChannelSplitRevenueType),
+        });
+      } else {
+        new Chart(document.getElementById("campaignChannelChart"), {
+          type: "bar",
+          data: {
+            labels: dashboardData.campaign_channel_performance.labels,
+            datasets: [
+              {
+                label: "Spend",
+                data: dashboardData.campaign_channel_performance.spend_values,
+                backgroundColor: "rgba(185, 60, 93, 0.8)",
+                borderRadius: 6,
               },
-              grid: { color: gridColor },
+              {
+                label: "Revenue",
+                data: dashboardData.campaign_channel_performance.revenue_values,
+                backgroundColor: "rgba(26, 127, 90, 0.8)",
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: { color: tickColor },
+                grid: { display: false },
+              },
+              y: {
+                ticks: {
+                  color: tickColor,
+                  callback: (value) => formatCompactNumber(value),
+                },
+                grid: { color: gridColor },
+              },
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: "bottom",
+              },
             },
           },
-          plugins: {
-            legend: {
-              display: true,
-              position: "bottom",
-            },
-          },
-        },
-      });
+        });
+      }
 
     </script>
   </body>
