@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+import pandas as pd
 
 from src.constants import CAMPAIGNS_CSV, ORDERS_CSV, SALES_CSV, VALID_TREND_GRAIN
 from src.services.csv_data_service import read_csv_rows
@@ -10,7 +10,21 @@ from src.services.dashboard_aggregation_service import (
     aggregate_revenue_trend,
 )
 from src.services.dashboard_config_service import load_dashboard_config
-from src.utils.number_helpers import to_float, to_int
+
+
+def _normalize_label_series(frame: pd.DataFrame, column_name: str) -> pd.Series:
+    if column_name not in frame.columns:
+        return pd.Series(["Unknown"] * len(frame), index=frame.index, dtype="object")
+
+    labels = frame[column_name].fillna("Unknown").astype(str).str.strip()
+    return labels.where(labels != "", "Unknown")
+
+
+def _numeric_series(frame: pd.DataFrame, column_name: str) -> pd.Series:
+    if column_name not in frame.columns:
+        return pd.Series([0] * len(frame), index=frame.index, dtype="float64")
+
+    return pd.to_numeric(frame[column_name], errors="coerce").fillna(0)
 
 
 def build_dashboard_data(trend_granularity: str = "daily") -> dict:
@@ -19,48 +33,91 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
     sales_rows = read_csv_rows(SALES_CSV)
     orders_rows = read_csv_rows(ORDERS_CSV)
     campaign_rows = read_csv_rows(CAMPAIGNS_CSV)
+    sales_df = pd.DataFrame(sales_rows)
+    orders_df = pd.DataFrame(orders_rows)
+    campaign_df = pd.DataFrame(campaign_rows)
 
-    total_revenue = sum(to_float(row.get("revenue", "0")) for row in sales_rows)
-    total_profit = sum(to_float(row.get("profit", "0")) for row in sales_rows)
+    sales_revenue = _numeric_series(sales_df, "revenue")
+    sales_profit = _numeric_series(sales_df, "profit")
+    sales_units = _numeric_series(sales_df, "units_sold")
+    campaign_spend_series = _numeric_series(campaign_df, "spend")
+    campaign_revenue_series = _numeric_series(campaign_df, "revenue")
+    campaign_conversion_series = _numeric_series(campaign_df, "conversions")
+    campaign_click_series = _numeric_series(campaign_df, "clicks")
+
+    total_revenue = float(sales_revenue.sum())
+    total_profit = float(sales_profit.sum())
     total_orders = len(sales_rows)
     avg_order_value = total_revenue / total_orders if total_orders else 0
 
-    revenue_by_region: dict[str, float] = defaultdict(float)
-    units_by_product: dict[str, int] = defaultdict(int)
-    revenue_by_segment: dict[str, float] = defaultdict(float)
+    revenue_by_region = (
+        sales_df.assign(
+            region=_normalize_label_series(sales_df, "region"),
+            revenue=sales_revenue,
+        )
+        .groupby("region", sort=False)["revenue"]
+        .sum()
+        .to_dict()
+    )
+    units_by_product = (
+        sales_df.assign(
+            product=_normalize_label_series(sales_df, "product"),
+            units=sales_units,
+        )
+        .groupby("product", sort=False)["units"]
+        .sum()
+        .to_dict()
+    )
+    revenue_by_segment = (
+        sales_df.assign(
+            customer_segment=_normalize_label_series(sales_df, "customer_segment"),
+            revenue=sales_revenue,
+        )
+        .groupby("customer_segment", sort=False)["revenue"]
+        .sum()
+        .to_dict()
+    )
 
-    for row in sales_rows:
-        region = row.get("region", "Unknown")
-        product = row.get("product", "Unknown")
-        segment = row.get("customer_segment", "Unknown")
-        revenue = to_float(row.get("revenue", "0"))
-        units = to_int(row.get("units_sold", "0"))
+    status_counts = (
+        orders_df.assign(order_status=_normalize_label_series(orders_df, "order_status"))
+        .groupby("order_status", sort=False)
+        .size()
+        .to_dict()
+    )
 
-        revenue_by_region[region] += revenue
-        units_by_product[product] += units
-        revenue_by_segment[segment] += revenue
-
-    status_counts: dict[str, int] = defaultdict(int)
-    for row in orders_rows:
-        status = row.get("order_status", "Unknown")
-        status_counts[status] += 1
-
-    campaign_spend = sum(to_float(row.get("spend", "0")) for row in campaign_rows)
-    campaign_revenue = sum(to_float(row.get("revenue", "0")) for row in campaign_rows)
-    campaign_conversions = sum(to_int(row.get("conversions", "0")) for row in campaign_rows)
-    campaign_clicks = sum(to_int(row.get("clicks", "0")) for row in campaign_rows)
+    campaign_spend = float(campaign_spend_series.sum())
+    campaign_revenue = float(campaign_revenue_series.sum())
+    campaign_conversions = int(campaign_conversion_series.sum())
+    campaign_clicks = int(campaign_click_series.sum())
     avg_campaign_roas = campaign_revenue / campaign_spend if campaign_spend else 0
 
-    spend_by_channel: dict[str, float] = defaultdict(float)
-    revenue_by_channel: dict[str, float] = defaultdict(float)
-    spend_by_region: dict[str, float] = defaultdict(float)
-
-    for row in campaign_rows:
-        channel = row.get("channel", "Unknown")
-        region = row.get("region", "Unknown")
-        spend_by_channel[channel] += to_float(row.get("spend", "0"))
-        revenue_by_channel[channel] += to_float(row.get("revenue", "0"))
-        spend_by_region[region] += to_float(row.get("spend", "0"))
+    spend_by_channel = (
+        campaign_df.assign(
+            channel=_normalize_label_series(campaign_df, "channel"),
+            spend=campaign_spend_series,
+        )
+        .groupby("channel", sort=False)["spend"]
+        .sum()
+        .to_dict()
+    )
+    revenue_by_channel = (
+        campaign_df.assign(
+            channel=_normalize_label_series(campaign_df, "channel"),
+            revenue=campaign_revenue_series,
+        )
+        .groupby("channel", sort=False)["revenue"]
+        .sum()
+        .to_dict()
+    )
+    spend_by_region = (
+        campaign_df.assign(
+            region=_normalize_label_series(campaign_df, "region"),
+            spend=campaign_spend_series,
+        )
+        .groupby("region", sort=False)["spend"]
+        .sum()
+        .to_dict()
+    )
 
     top_products_top_n = dashboard_config["charts"]["top_products_by_units"]["top_n"]
     include_others = dashboard_config["charts"]["top_products_by_units"]["include_others"]
@@ -71,11 +128,14 @@ def build_dashboard_data(trend_granularity: str = "daily") -> dict:
         key=lambda channel_name: revenue_by_channel[channel_name],
         reverse=True,
     )
-    latest_campaigns = sorted(
-        campaign_rows,
-        key=lambda row: row.get("start_date", ""),
-        reverse=True,
-    )[:latest_campaigns_last_n_rows]
+    if campaign_df.empty:
+        latest_campaigns = []
+    else:
+        latest_campaigns = (
+            campaign_df.sort_values("start_date", ascending=False)
+            .head(latest_campaigns_last_n_rows)
+            .to_dict("records")
+        )
     ranked_products = sorted(units_by_product.items(), key=lambda x: x[1], reverse=True)
     top_products = ranked_products[:top_products_top_n]
     if include_others and len(ranked_products) > top_products_top_n:
