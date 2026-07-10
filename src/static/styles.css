@@ -257,15 +257,18 @@ h1 {
 .config-form {
   margin-top: 1rem;
   display: grid;
+  grid-template-columns: 1fr;
   gap: 0.7rem;
-  max-width: 380px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .config-form-options {
   margin-top: 1.4rem;
   padding-top: 0.9rem;
   border-top: 1px solid rgba(63, 73, 103, 0.16);
-  max-width: 520px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .config-subtitle {
@@ -278,6 +281,14 @@ h1 {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--ink-700);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.config-form input,
+.config-form select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .save-config-btn {
