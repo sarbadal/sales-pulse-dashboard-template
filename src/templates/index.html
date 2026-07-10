@@ -89,11 +89,11 @@
       <section class="kpi-grid">
         <article class="kpi-card">
           <p>Total Revenue</p>
-          <h2>${{ '{:,.2f}'.format(data.kpis.total_revenue) }}</h2>
+          <h2>${{ '{:,.0f}'.format(data.kpis.total_revenue) }}</h2>
         </article>
         <article class="kpi-card">
           <p>Total Profit</p>
-          <h2>${{ '{:,.2f}'.format(data.kpis.total_profit) }}</h2>
+          <h2>${{ '{:,.0f}'.format(data.kpis.total_profit) }}</h2>
         </article>
         <article class="kpi-card">
           <p>Total Orders</p>
@@ -101,18 +101,18 @@
         </article>
         <article class="kpi-card">
           <p>Average Order Value</p>
-          <h2>${{ '{:,.2f}'.format(data.kpis.avg_order_value) }}</h2>
+          <h2>${{ '{:,.0f}'.format(data.kpis.avg_order_value) }}</h2>
         </article>
       </section>
 
       <section class="kpi-grid campaign-kpi-grid">
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Spend</p>
-          <h2>${{ '{:,.2f}'.format(data.campaign_kpis.total_spend) }}</h2>
+          <h2>${{ '{:,.0f}'.format(data.campaign_kpis.total_spend) }}</h2>
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Revenue</p>
-          <h2>${{ '{:,.2f}'.format(data.campaign_kpis.total_campaign_revenue) }}</h2>
+          <h2>${{ '{:,.0f}'.format(data.campaign_kpis.total_campaign_revenue) }}</h2>
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Conversions</p>
@@ -120,7 +120,7 @@
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Average ROAS</p>
-          <h2>{{ '%.2f'|format(data.campaign_kpis.avg_roas) }}x</h2>
+          <h2>{{ '%.0f'|format(data.campaign_kpis.avg_roas) }}x</h2>
         </article>
       </section>
 
@@ -224,8 +224,8 @@
                 <td>{{ row.region }}</td>
                 <td>{{ row.product }}</td>
                 <td>{{ row.customer_segment }}</td>
-                <td>${{ row.revenue }}</td>
-                <td>${{ row.profit }}</td>
+                <td>${{ '{:,.0f}'.format(row.revenue|float) }}</td>
+                <td>${{ '{:,.0f}'.format(row.profit|float) }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -260,9 +260,9 @@
                 <td>{{ row.channel }}</td>
                 <td>{{ row.region }}</td>
                 <td>{{ row.start_date }}</td>
-                <td>${{ row.spend }}</td>
-                <td>${{ row.revenue }}</td>
-                <td>{{ row.roas }}x</td>
+                <td>${{ '{:,.0f}'.format(row.spend|float) }}</td>
+                <td>${{ '{:,.0f}'.format(row.revenue|float) }}</td>
+                <td>{{ '%.0f'|format(row.roas|float) }}x</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -282,6 +282,17 @@
 
     <script>
       const dashboardData = {{ data|tojson }};
+      const regionDropdown = document.querySelector(".region-dropdown");
+
+      if (regionDropdown) {
+        document.addEventListener("click", (event) => {
+          if (!(event.target instanceof Node)) return;
+          if (regionDropdown.open && !regionDropdown.contains(event.target)) {
+            regionDropdown.open = false;
+          }
+        });
+      }
+
       const dashboardTitle = document.getElementById("dashboardTitle");
       if (dashboardTitle) {
         dashboardTitle.style.color = dashboardData.branding?.dashboard_title_color || "#1f2435";
@@ -332,7 +343,7 @@
         return new Intl.NumberFormat("en-US", {
           notation: "compact",
           compactDisplay: "short",
-          maximumFractionDigits: 1,
+          maximumFractionDigits: 0,
         }).format(num);
       }
 
@@ -340,10 +351,7 @@
         const num = Number(value);
         if (!Number.isFinite(num)) return `${value}x`;
 
-        return `${num
-          .toFixed(2)
-          .replace(/\.00$/, "")
-          .replace(/(\.\d)0$/, "$1")}x`;
+        return `${Math.round(num)}x`;
       }
 
       function resolveBasicChartType(configType) {
