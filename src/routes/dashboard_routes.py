@@ -41,6 +41,11 @@ def config_selector() -> str:
                     "order_status": {
                         "type": request.form.get("order_status_type", "").strip(),
                     },
+                    "top_products_by_units": {
+                        "top_n": request.form.get("top_products_top_n", "").strip(),
+                        "color": request.form.get("top_products_color", "").strip(),
+                        "include_others": request.form.get("top_products_include_others", "").strip(),
+                    },
                     "campaign_channel_performance": {
                         "mode": request.form.get("campaign_channel_mode", "").strip(),
                         "split_spend_type": request.form.get("split_spend_type", "").strip(),

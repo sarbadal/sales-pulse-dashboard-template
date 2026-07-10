@@ -81,6 +81,31 @@
             <option value="horizontal_bar" {% if active_config.charts.order_status.type == 'horizontal_bar' %}selected{% endif %}>horizontal_bar</option>
           </select>
 
+          <label for="top_products_top_n">Top Products - Top N</label>
+          <input
+            id="top_products_top_n"
+            name="top_products_top_n"
+            type="number"
+            class="trend-select"
+            value="{{ active_config.charts.top_products_by_units.top_n }}"
+            min="1"
+          />
+
+          <label for="top_products_color">Top Products - Color</label>
+          <input
+            id="top_products_color"
+            name="top_products_color"
+            type="text"
+            class="trend-select"
+            value="{{ active_config.charts.top_products_by_units.color }}"
+          />
+
+          <label for="top_products_include_others">Top Products - Include Others</label>
+          <select id="top_products_include_others" name="top_products_include_others" class="trend-select">
+            <option value="true" {% if active_config.charts.top_products_by_units.include_others %}selected{% endif %}>true</option>
+            <option value="false" {% if not active_config.charts.top_products_by_units.include_others %}selected{% endif %}>false</option>
+          </select>
+
           <label for="campaign_channel_mode">Campaign Channel Mode</label>
           <select id="campaign_channel_mode" name="campaign_channel_mode" class="trend-select">
             <option value="combined" {% if active_config.charts.campaign_channel_performance.mode == 'combined' %}selected{% endif %}>combined</option>

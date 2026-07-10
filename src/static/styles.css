@@ -120,6 +120,13 @@ h1 {
   text-decoration: underline;
 }
 
+.nav-link-disabled {
+  color: var(--ink-700);
+  opacity: 0.75;
+  text-decoration: none;
+  cursor: default;
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

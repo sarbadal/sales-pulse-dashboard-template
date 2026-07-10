@@ -1,22 +1,26 @@
 branding:
-  dashboard_title: 'Performance Dashboard: (Sales & Campaigns)'
+  dashboard_title: 'Performance Dashboard: Sales & Campaigns'
   dashboard_title_color: '#1f2435'
 charts:
   revenue_trend:
-    style: area
+    style: line
   revenue_by_region:
     type: donut
   revenue_by_segment:
-    type: horizontal_bar
+    type: donut
   order_status:
-    type: horizontal_bar
+    type: donut
+  top_products_by_units:
+    top_n: '6'
+    color: teal
+    include_others: 'false'
   campaign_channel_performance:
-    mode: combined
+    mode: split
     split_spend_type: donut
     split_revenue_type: horizontal_bar
   latest_sales_orders:
     show_table: 'true'
-    last_n_rows: '5'
+    last_n_rows: '3'
   latest_campaigns:
     show_table: 'true'
-    last_n_rows: '5'
+    last_n_rows: '3'

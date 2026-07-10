@@ -32,41 +32,41 @@
           <p class="eyebrow">Daily Commerce Snapshot</p>
           <h1 id="dashboardTitle">{{ data.branding.dashboard_title }}</h1>
           <p class="subtitle">Simple Flask dashboard powered by CSV data.</p>
-          <p><a href="{{ url_for('dashboard.config_selector') }}" class="nav-link">Open Config Selector</a></p>
+          <!-- <p><a href="{{ url_for('dashboard.config_selector') }}" class="nav-link">Open Config Selector</a></p> -->
         </div>
       </header>
 
       <section class="kpi-grid">
         <article class="kpi-card">
           <p>Total Revenue</p>
-          <h2>${{ '%.2f'|format(data.kpis.total_revenue) }}</h2>
+          <h2>${{ '{:,.2f}'.format(data.kpis.total_revenue) }}</h2>
         </article>
         <article class="kpi-card">
           <p>Total Profit</p>
-          <h2>${{ '%.2f'|format(data.kpis.total_profit) }}</h2>
+          <h2>${{ '{:,.2f}'.format(data.kpis.total_profit) }}</h2>
         </article>
         <article class="kpi-card">
           <p>Total Orders</p>
-          <h2>{{ data.kpis.total_orders }}</h2>
+          <h2>{{ '{:,}'.format(data.kpis.total_orders) }}</h2>
         </article>
         <article class="kpi-card">
           <p>Average Order Value</p>
-          <h2>${{ '%.2f'|format(data.kpis.avg_order_value) }}</h2>
+          <h2>${{ '{:,.2f}'.format(data.kpis.avg_order_value) }}</h2>
         </article>
       </section>
 
       <section class="kpi-grid campaign-kpi-grid">
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Spend</p>
-          <h2>${{ '%.2f'|format(data.campaign_kpis.total_spend) }}</h2>
+          <h2>${{ '{:,.2f}'.format(data.campaign_kpis.total_spend) }}</h2>
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Revenue</p>
-          <h2>${{ '%.2f'|format(data.campaign_kpis.total_campaign_revenue) }}</h2>
+          <h2>${{ '{:,.2f}'.format(data.campaign_kpis.total_campaign_revenue) }}</h2>
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Campaign Conversions</p>
-          <h2>{{ data.campaign_kpis.total_conversions }}</h2>
+          <h2>{{ '{:,}'.format(data.campaign_kpis.total_conversions) }}</h2>
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Average ROAS</p>
@@ -93,7 +93,7 @@
 
         <article class="panel">
           <div class="panel-head">
-            <h3>Revenue by Region</h3>
+            <h3>Revenue and Campaign Spend by Region</h3>
             <span>Distribution</span>
           </div>
           <canvas id="regionChart"></canvas>
