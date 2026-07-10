@@ -1,4 +1,4 @@
-# Sales Dashboard (Flask)
+# Sales Performance Dashboard (Flask)
 
 Configurable sales and campaign performance dashboard built with Flask, CSV data files, and Chart.js.
 
