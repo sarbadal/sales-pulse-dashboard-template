@@ -1,89 +1,16 @@
 # Sales Dashboard (Flask)
 
-Simple Flask dashboard that reads sales data from CSV files.
+Configurable sales and campaign performance dashboard built with Flask, CSV data files, and Chart.js.
 
-## Configuration (YAML)
+## Hosted Example
 
-The dashboard behavior is controlled by:
+Live example URL:
 
-- `config/dashboard_config.yaml`
-- selected file pointer: `config/active_dashboard_config.yaml`
-- active option overrides: `config/active_dashboard_options.yaml`
+- https://perf-sales-campaign-template.spal-project.com/
 
-Edit this file to change title text, chart styles, colors, and table size.
+This link is provided as a demo reference. You can open it to quickly understand the layout, chart behavior, and runtime customization flow.
 
-You can switch active config from the browser at:
-
-- `/config`
-
-The selected file name is stored in `config/active_dashboard_config.yaml` under `selected_config`.
-Dropdown selections from the `/config` page are stored in `config/active_dashboard_options.yaml` and merged on top of the selected base config.
-
-### What you are expected to change
-
-- `branding.dashboard_title`: Dashboard heading and browser tab title.
-- `branding.dashboard_title_color`: Title color (hex, rgb/rgba, or color name).
-- `charts.revenue_trend.style`: `line` or `area`.
-- `charts.revenue_trend.line_color`, `charts.revenue_trend.area_color`: Trend chart colors.
-- `charts.revenue_by_region.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
-- `charts.revenue_by_segment.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
-- `charts.order_status.type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar`.
-- `charts.campaign_channel_performance.mode`: `combined` or `split`.
-- `charts.campaign_channel_performance.split_spend_type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar` (used when mode is `split`).
-- `charts.campaign_channel_performance.split_revenue_type`: `donut`, `pie`, `vertical_bar`, or `horizontal_bar` (used when mode is `split`).
-- `charts.*.colors`: Color list used in region/segment/status charts.
-- `charts.top_products_by_units.top_n`: Positive integer for number of products.
-- `charts.top_products_by_units.color`: Single bar color for top products chart.
-- `charts.top_products_by_units.include_others`: `true` or `false` to show/hide Others bar.
-- `charts.latest_sales_orders.last_n_rows`: Positive integer for rows in latest orders table.
-- `charts.latest_sales_orders.show_table`: `true` or `false` to show/hide Latest Sales Orders table.
-- `charts.latest_campaigns.last_n_rows`: Positive integer for rows in latest campaigns table.
-- `charts.latest_campaigns.show_table`: `true` or `false` to show/hide Latest Campaigns table.
-
-### Notes
-
-- Keep YAML indentation with spaces.
-- Use valid YAML values (`true`/`false`, numbers without quotes when possible).
-- Restart the app after config changes.
-
-## Revenue + Campaign ROAS Trend Logic
-
-The combined trend chart plots:
-
-- Revenue (from sales CSV)
-- Campaign ROAS (recomputed from campaign spend/revenue)
-
-Campaign ROAS continuity is calculated from active campaign date ranges (`start_date` to `end_date`) instead of only campaign start dates.
-
-### How Campaign ROAS Is Computed
-
-1. For each campaign row:
-	- Parse `start_date` and `end_date`.
-	- Compute campaign duration in days:
-	  - `campaign_days = (end_date - start_date) + 1`
-	- Distribute totals uniformly across campaign days:
-	  - `daily_spend = spend / campaign_days`
-	  - `daily_revenue = revenue / campaign_days`
-
-2. For each day in the campaign range:
-	- Map the day into the selected bucket (`daily`, `weekly`, `monthly`).
-	- Add `daily_spend` and `daily_revenue` to that bucket totals.
-
-3. After all campaigns are processed, compute bucket ROAS:
-	- `roas_bucket = total_revenue_bucket / total_spend_bucket`
-	- Rounded to 2 decimals.
-
-### Granularity Bucketing Rules
-
-- `daily`: exact date bucket
-- `weekly`: Monday-start week bucket
-- `monthly`: first day of month bucket
-
-### Important Note
-
-The trend chart uses recomputed ROAS from aggregated spend/revenue per bucket. It does not directly plot the row-level `roas` column from the campaign CSV.
-
-## Run locally
+## Run Locally
 
 1. Create and activate a virtual environment.
 2. Install dependencies:
@@ -98,6 +25,57 @@ pip install -r requirements.txt
 python main.py
 ```
 
-4. Open in browser:
+4. Open:
 
-http://127.0.0.1:5000
+- http://127.0.0.1:5000
+
+Local behavior should look very similar to the hosted example.
+
+## Config Route
+
+Open the config page at:
+
+- `/config`
+
+From this route, you can modify active dashboard options such as:
+
+- branding title and title color
+- chart types
+- trend style
+- table visibility and row counts
+- top products settings
+
+Saved values are written to:
+
+- `config/active_dashboard_options.yaml`
+
+This lets you tweak the dashboard quickly without editing template code.
+
+After you change options in `/config` and click save, the main dashboard reflects those updated settings.
+
+## Configuration Files
+
+- `config/dashboard_config.yaml`: Base/default dashboard configuration.
+- `config/active_dashboard_options.yaml`: Active runtime overrides saved from `/config`.
+
+## Ephemeral Behavior (Important)
+
+The hosted example is intentionally ephemeral.
+
+- No database is used for config persistence.
+- Runtime changes are available while the underlying Cloud Function container/session is active.
+- After inactivity, the container may be stopped/recycled by the platform.
+- When a new container starts, prior runtime changes may be lost.
+
+So this deployment is a proof-of-concept demonstration of runtime customization, not a permanent persistence setup.
+
+## Intended Usage Pattern
+
+This template is designed as a fast client onboarding accelerator:
+
+1. Share a ready dashboard quickly.
+2. Let stakeholders adjust options from `/config`.
+3. Capture preferred parameter values.
+4. Convert those selected values into stable config for a client-specific deployment.
+
+In short, it is a quick way to present configurable dashboard capabilities for basic client needs, then finalize and redeploy with persistent settings as needed.
