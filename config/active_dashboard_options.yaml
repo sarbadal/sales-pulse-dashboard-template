@@ -13,7 +13,7 @@ charts:
   top_products_by_units:
     top_n: '6'
     color: teal
-    include_others: 'false'
+    include_others: 'true'
   campaign_channel_performance:
     mode: split
     split_spend_type: donut
