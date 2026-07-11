@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import pandas as pd
+from typing import TypeAlias
 
 from src.constants import CAMPAIGNS_CSV, ORDERS_CSV, SALES_CSV, VALID_TREND_GRAIN
 from src.services.csv_data_service import read_csv_rows
 from src.services.dashboard_aggregation_service import (
+    aggregate_campaign_totals,
     aggregate_campaign_roas_trend,
     aggregate_campaign_spend_trend,
     aggregate_revenue_trend,
@@ -22,13 +24,10 @@ from src.services.dashboard_data_helpers import (
 )
 from src.services.dashboard_types import RegionRawInput
 
+DateRaw: TypeAlias = str | None
 
-def build_dashboard_data(
-    trend_granularity: str = "daily",
-    start_date_raw: str | None = None,
-    end_date_raw: str | None = None,
-    region_raw: RegionRawInput = None,
-) -> dict:
+
+def build_dashboard_data(trend_granularity: str = "daily", start_date_raw: DateRaw = None, end_date_raw: DateRaw = None, region_raw: RegionRawInput = None) -> dict:
     selected_trend = trend_granularity if trend_granularity in VALID_TREND_GRAIN else "daily"
     dashboard_config = load_dashboard_config()
     sales_df = pd.DataFrame(read_csv_rows(SALES_CSV))
@@ -108,8 +107,13 @@ def build_dashboard_data(
         .to_dict()
     )
 
-    campaign_spend = float(campaign_spend_series.sum())
-    campaign_revenue = float(campaign_revenue_series.sum())
+    selected_start_date_raw = selected_start_date.isoformat() if selected_start_date else ""
+    selected_end_date_raw = selected_end_date.isoformat() if selected_end_date else ""
+    campaign_spend, campaign_revenue = aggregate_campaign_totals(
+        campaign_rows,
+        selected_start_date_raw,
+        selected_end_date_raw,
+    )
     campaign_conversions = int(campaign_conversion_series.sum())
     campaign_clicks = int(campaign_click_series.sum())
     avg_campaign_roas = campaign_revenue / campaign_spend if campaign_spend else 0
@@ -195,14 +199,14 @@ def build_dashboard_data(
         "campaign_roas_trend": aggregate_campaign_roas_trend(
             campaign_rows,
             selected_trend,
-            selected_start_date.isoformat() if selected_start_date else "",
-            selected_end_date.isoformat() if selected_end_date else "",
+            selected_start_date_raw,
+            selected_end_date_raw,
         ),
         "campaign_spend_trend": aggregate_campaign_spend_trend(
             campaign_rows,
             selected_trend,
-            selected_start_date.isoformat() if selected_start_date else "",
-            selected_end_date.isoformat() if selected_end_date else "",
+            selected_start_date_raw,
+            selected_end_date_raw,
         ),
         "chart_config": {
             "revenue_trend_style": dashboard_config["charts"]["revenue_trend"]["style"],

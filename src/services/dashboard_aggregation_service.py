@@ -118,12 +118,7 @@ def aggregate_revenue_trend(sales_rows: list[dict[str, str]], granularity: str) 
     }
 
 
-def aggregate_campaign_roas_trend(
-    campaign_rows: list[dict[str, str]],
-    granularity: str,
-    start_date_raw: str | None = None,
-    end_date_raw: str | None = None,
-) -> dict[str, list]:
+def aggregate_campaign_roas_trend(campaign_rows: list[dict[str, str]], granularity: str, start_date_raw: str | None = None, end_date_raw: str | None = None) -> dict[str, list]:
     """Aggregate campaign ROAS over time using distributed daily spend and revenue."""
     period = _resolve_period(granularity)
     start_bound, end_bound = _resolve_date_bounds(start_date_raw, end_date_raw)
@@ -175,3 +170,20 @@ def aggregate_campaign_spend_trend(
         "labels": grouped["bucket_date"].dt.strftime("%Y-%m-%d").tolist(),
         "values": grouped["daily_spend"].round(2).tolist(),
     }
+
+
+def aggregate_campaign_totals(
+    campaign_rows: list[dict[str, str]],
+    start_date_raw: str | None = None,
+    end_date_raw: str | None = None,
+) -> tuple[float, float]:
+    """Return date-bounded campaign spend and revenue totals from distributed daily values."""
+    start_bound, end_bound = _resolve_date_bounds(start_date_raw, end_date_raw)
+    distributed_df = _build_campaign_daily_distribution(campaign_rows)
+    distributed_df = _apply_date_bounds(distributed_df, start_bound, end_bound)
+    if distributed_df.empty:
+        return 0.0, 0.0
+
+    total_spend = float(distributed_df["daily_spend"].sum())
+    total_revenue = float(distributed_df["daily_revenue"].sum())
+    return total_spend, total_revenue

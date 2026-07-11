@@ -120,7 +120,7 @@
         </article>
         <article class="kpi-card kpi-card-campaign">
           <p>Average ROAS</p>
-          <h2>{{ '%.0f'|format(data.campaign_kpis.avg_roas) }}x</h2>
+          <h2>{{ '%.2f'|format(data.campaign_kpis.avg_roas) }}x</h2>
         </article>
       </section>
 
@@ -749,7 +749,10 @@
         plugins: {
           legend: {
             display: !isSegmentBar,
-            position: "bottom",
+            position:
+              revenueBySegmentType === "pie" || revenueBySegmentType === "donut"
+                ? "right"
+                : "bottom",
           },
         },
       };

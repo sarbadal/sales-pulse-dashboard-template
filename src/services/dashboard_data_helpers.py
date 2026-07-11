@@ -125,12 +125,7 @@ def _apply_region_filter(sales_df: pd.DataFrame, orders_df: pd.DataFrame, campai
     return filtered_sales_df, filtered_orders_df, filtered_campaign_df
 
 
-def _build_date_mask(
-    frame: pd.DataFrame,
-    column_name: str,
-    start_date: date | None,
-    end_date: date | None,
-) -> pd.Series:
+def _build_date_mask(frame: pd.DataFrame, column_name: str, start_date: date | None, end_date: date | None) -> pd.Series:
     if frame.empty:
         return pd.Series([], index=frame.index, dtype="bool")
 
@@ -146,13 +141,7 @@ def _build_date_mask(
     return mask
 
 
-def _filter_dataframes_by_date_range(
-    sales_df: pd.DataFrame,
-    orders_df: pd.DataFrame,
-    campaign_df: pd.DataFrame,
-    start_date: date | None,
-    end_date: date | None,
-) -> DataFrameTriplet:
+def _filter_dataframes_by_date_range(sales_df: pd.DataFrame, orders_df: pd.DataFrame, campaign_df: pd.DataFrame, start_date: date | None, end_date: date | None) -> DataFrameTriplet:
     if not start_date and not end_date:
         return sales_df, orders_df, campaign_df
 
